@@ -5,5 +5,5 @@ project(zeno_blender LANGUAGES C CXX)
 add_subdirectory(external/zeno)
 
 add_subdirectory(external/pybind11)
-add_subdirectory(pyzenoblend)
+add_subdirectory(zenoblend)
 

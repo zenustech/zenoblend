@@ -1,5 +1,5 @@
-file(GLOB PYZENOBLEND_SOURCE "*.cpp" "*.hpp" "*.h")
-pybind11_add_module(zenoblend_pybind11_module ${PYZENOBLEND_SOURCE})
+file(GLOB ZENOBLEND_SOURCE "*.cpp" "*.hpp" "*.h")
+pybind11_add_module(zenoblend_pybind11_module ${ZENOBLEND_SOURCE})
 target_include_directories(zenoblend_pybind11_module PRIVATE .)
 target_link_libraries(zenoblend_pybind11_module PRIVATE zeno)
 

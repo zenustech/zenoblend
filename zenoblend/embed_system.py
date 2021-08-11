@@ -1,5 +1,7 @@
 import bpy
 
+from . import zenoblend_pybind11_module as core
+
 
 def mesh_get_vertices(mesh):
     verts = [0. for i in range(len(mesh.vertices) * 3)]
@@ -14,17 +16,19 @@ def mesh_set_vertices(mesh, verts):
     while len(verts) > n:
         verts.pop()
     mesh.vertices.foreach_set('co', verts)
+    mesh.update()
 
 
 def demo():
     mesh = bpy.context.object.data
     verts = mesh_get_vertices(mesh)
-    for i in range(len(verts)):
-        verts[i] += 0.1
+    verts = core.getDemoVertices()
+    print('setting', verts)
     mesh_set_vertices(mesh, verts)
 
 
 def register():
+    print('register')
     demo()
 
 

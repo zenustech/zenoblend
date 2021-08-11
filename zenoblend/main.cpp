@@ -5,9 +5,12 @@
 namespace py = pybind11;
 
 
-PYBIND11_MODULE(pyzenoblend_pybind11_module, m) {
-    m.def("getVertices", [] () -> std::vector<std::array<float, 3>> {
-        return {{1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f}};
+PYBIND11_MODULE(zenoblend_pybind11_module, m) {
+    m.def("getDemoVertices", [] () -> std::vector<float> {
+        return {1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f};
+    });
+    m.def("getDemoTriangles", [] () -> std::vector<int> {
+        return {0, 1, 2};
     });
 
     py::register_exception_translator([](std::exception_ptr p) {

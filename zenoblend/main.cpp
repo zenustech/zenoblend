@@ -17,5 +17,6 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
                 , mesh->mvert->co[1]
                 , mesh->mvert->co[2]
         );
+        printf("%d\n", mesh->totvert);
     });
 }

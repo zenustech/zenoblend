@@ -20,11 +20,11 @@ bl_info = {
 
 
 from . import (
-    embed_system,
+    mesh_ops,
 )
 
 modules = (
-    embed_system,
+    mesh_ops,
 )
 
 

@@ -20,11 +20,11 @@ bl_info = {
 
 
 from . import (
-    frame_animation,
+    embed_system,
 )
 
 modules = (
-    frame_animation,
+    embed_system,
 )
 
 

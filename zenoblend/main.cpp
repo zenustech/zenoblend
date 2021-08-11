@@ -32,7 +32,16 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         return reinterpret_cast<uintptr_t>(graph);
     });
 
-    m.def("sceneMakeGraphInputPrimitive", []
+    m.def("sceneLoadCommandList", []
+            ( int sceneId
+            , const char *jsonStr
+            ) -> void
+    {
+        auto const &scene = scenes.at(sceneId);
+        scene->loadScene(jsonStr);
+    });
+
+    m.def("graphCreateInputPrimitive", []
             ( uintptr_t graphPtr
             , std::string const &inputName
             ) -> uintptr_t
@@ -44,13 +53,21 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         return primPtr;
     });
 
-    m.def("sceneGetGraphOutputPrimitive", []
+    m.def("graphApply", []
             ( uintptr_t graphPtr
-            , std::string const &inputName
+            ) -> void
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        graph->applyGraph();
+    });
+
+    m.def("graphGetOutputPrimitive", []
+            ( uintptr_t graphPtr
+            , std::string const &outputName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto prim = graph->getGraphOutput(inputName);
+        auto prim = graph->getGraphOutput(outputName);
         auto primPtr = reinterpret_cast<uintptr_t>(prim.get());
         return primPtr;
     });

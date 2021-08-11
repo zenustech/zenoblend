@@ -7,7 +7,7 @@ def demo():
     mesh = bpy.context.object.data
     vertCount = len(mesh.vertices)
     vertPtr = mesh.vertices[0].as_pointer()
-    core.testMesh(vertPtr, vertCount)
+    core.primitiveSetVertices(primPtr, vertPtr, vertCount)
 
 
 def register():

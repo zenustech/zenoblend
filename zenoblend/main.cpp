@@ -9,8 +9,51 @@ namespace py = pybind11;
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 
+static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
 PYBIND11_MODULE(zenoblend_pybind11_module, m) {
+
+    m.def("createScene", []
+            (
+            ) -> int
+    {
+        static int topid = 0;
+        auto id = topid++;
+        scenes[id] = zeno::createScene();
+        return id;
+    });
+
+    m.def("sceneGetCurrentGraph", []
+            ( int sceneId
+            ) -> uintptr_t
+    {
+        auto const &scene = scenes.at(sceneId);
+        zeno::Graph *graph = &scene->getGraph();
+        return reinterpret_cast<uintptr_t>(graph);
+    });
+
+    m.def("sceneMakeGraphInputPrimitive", []
+            ( uintptr_t graphPtr
+            , std::string const &inputName
+            ) -> uintptr_t
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto primPtr = reinterpret_cast<uintptr_t>(prim.get());
+        graph->setGraphInput(inputName, std::move(prim));
+        return primPtr;
+    });
+
+    m.def("sceneGetGraphOutputPrimitive", []
+            ( uintptr_t graphPtr
+            , std::string const &inputName
+            ) -> uintptr_t
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        auto prim = graph->getGraphOutput(inputName);
+        auto primPtr = reinterpret_cast<uintptr_t>(prim.get());
+        return primPtr;
+    });
 
     m.def("primitiveSetVertices", []
             ( uintptr_t primPtr

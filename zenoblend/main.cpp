@@ -7,16 +7,14 @@ namespace py = pybind11;
 
 
 PYBIND11_MODULE(zenoblend_pybind11_module, m) {
-    m.def("testMesh", [] (uintptr_t meshPtr) {
-        auto mesh = reinterpret_cast<Mesh const *>(meshPtr);
-        printf("hello\n");
-        printf("%p\n", mesh);
-        printf("%p\n", mesh->mvert);
-        printf("%f %f %f\n"
-                , mesh->mvert->co[0]
-                , mesh->mvert->co[1]
-                , mesh->mvert->co[2]
-        );
-        printf("%d\n", mesh->totvert);
+    m.def("testMesh", [] (uintptr_t vertPtr, size_t vertCount) {
+        auto vert = reinterpret_cast<MVert const *>(vertPtr);
+        for (int i = 0; i < vertCount; i++) {
+            printf("%f %f %f\n"
+                    , vert[i].co[0]
+                    , vert[i].co[1]
+                    , vert[i].co[2]
+            );
+        }
     });
 }

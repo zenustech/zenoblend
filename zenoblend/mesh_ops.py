@@ -5,7 +5,9 @@ from . import zenoblend_pybind11_module as core
 
 def demo():
     mesh = bpy.context.object.data
-    core.testMesh(mesh.as_pointer())
+    vertCount = len(mesh.vertices)
+    vertPtr = mesh.vertices[0].as_pointer()
+    core.testMesh(vertPtr, vertCount)
 
 
 def register():

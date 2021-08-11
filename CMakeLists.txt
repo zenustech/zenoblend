@@ -5,6 +5,8 @@ set(CMAKE_BUILD_TYPE Debug)
 
 add_subdirectory(external/zeno)
 
+include_directories(include)
+
 add_subdirectory(external/pybind11)
 add_subdirectory(zenoblend)
 

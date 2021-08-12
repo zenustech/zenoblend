@@ -1,3 +1,4 @@
+import bpy
 from bpy.types import NodeTree, Node, NodeSocket
 from nodeitems_utils import NodeCategory, NodeItem
 
@@ -103,6 +104,9 @@ def get_descriptors():
 
 def test_dump():
     json = list(dump_tree(bpy.data.node_groups[0]))
+    print(json)
+
+bpy.test_dump = test_dump
 
 def dump_tree(tree):
     yield ('clearAllState',)

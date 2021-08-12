@@ -30,6 +30,13 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         return id;
     });
 
+    m.def("deleteScene", []
+            ( int sceneId
+            ) -> void
+    {
+        scenes.erase(sceneId);
+    });
+
     m.def("sceneSwitchToGraph", []
             ( int sceneId
             , std::string const &graphName

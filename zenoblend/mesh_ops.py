@@ -41,13 +41,10 @@ def meshToBlender(meshPtr, mesh):
     mesh.update()
 
 
-def demo():
-    with open('/home/bate/Codes/zeno-blender/external/zeno/a.json') as f:
-        jsonStr = f.read()
-        print('jsonStr = ', jsonStr)
-
+def execute_graph(json):
     sceneId = core.createScene()
-    core.sceneLoadFromJson(sceneId, jsonStr)
+    core.sceneLoadFromJson(sceneId, json)
+
     core.sceneSwitchToGraph(sceneId, 'main')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
@@ -59,9 +56,11 @@ def demo():
     outMeshPtr = core.graphGetOutputMesh(graphPtr, 'outputMesh')
     meshToBlender(outMeshPtr, bpy.context.object.data)
 
+    core.deleteScene(sceneId)
+
 
 def register():
-    demo()
+    pass
 
 
 def unregister():

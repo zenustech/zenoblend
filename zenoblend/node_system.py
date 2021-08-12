@@ -108,7 +108,7 @@ def test_dump():
 
 bpy.test_dump = test_dump
 
-def dump_tree(tree):
+def dump_graph(tree):
     yield ('clearAllState',)
     yield ('switchGraph', 'main')
     for node_name, node in tree.nodes.items():

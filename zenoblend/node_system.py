@@ -24,33 +24,41 @@ class ZenoNodeSocket(NodeSocket):
 class ZenoTreeNode:
     @classmethod
     def poll(cls, ntree):
-        return ntree.bl_idname == 'ZenoTreeType'
+        return ntree.bl_idname == 'ZenoNodeTree'
 
 
-# Derived from the Node base type.
-class ZenoNode_TransformPrimitive(Node, ZenoTreeNode):
-    '''Zeno node from ZDK: TransformPrimitive'''
-    bl_idname = 'ZenoNode_TransformPrimitive'
-    bl_label = "TransformPrimitive"
-    bl_icon = 'NODETREE'
+node_classes = []
 
-    my_string_prop: bpy.props.StringProperty()
-    my_float_prop: bpy.props.FloatProperty(default=3.1415926)
+type_lut = {
+    'int': 'NodeSocketInt',
+    'float': 'NodeSocketFloat',
+    'vec3f': 'NodeSocketVector',
+}
 
-    def init(self, context):
-        self.inputs.new('ZenoNodeSocket', "Hello")
-        self.inputs.new('NodeSocketFloat', "World")
-        self.inputs.new('NodeSocketVector', "!")
+def make_node_class(name, inputs, outputs):
+    class Def(Node, ZenoTreeNode):
+        '''Zeno node from ZDK: ''' + name
+        bl_idname = 'ZenoNode_' + name
+        bl_label = name
+        bl_icon = 'NODETREE'
 
-        self.outputs.new('NodeSocketColor', "How")
-        self.outputs.new('NodeSocketColor', "are")
-        self.outputs.new('NodeSocketFloat', "you")
+        def init(self, context):
+            for type, name in inputs:
+                type = type_lut.get(type, 'ZenoNodeSocket')
+                self.inputs.new(type, name)
 
-    def draw_buttons(self, context, layout):
-        layout.label(text="(Imported From ZDK)")
+            for type, name in outputs:
+                type = type_lut.get(type, 'ZenoNodeSocket')
+                self.outputs.new(type, name)
 
-    def draw_label(self):
-        return self.bl_label
+    Def.__name__ = 'ZenoNode_' + name
+    node_classes.append(Def)
+    return Def
+
+make_node_class('TransformPrimitive',
+        [('int', 'inner'), ('float', 'second')],
+        [('float', 'outer')],
+)
 
 
 import nodeitems_utils
@@ -60,7 +68,7 @@ from nodeitems_utils import NodeCategory, NodeItem
 class ZenoNodeCategory(NodeCategory):
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'ZenoTreeType'
+        return context.space_data.tree_type == 'ZenoNodeTree'
 
 
 node_categories = [
@@ -73,12 +81,13 @@ node_categories = [
 classes = (
     ZenoNodeTree,
     ZenoNodeSocket,
-    ZenoNode_TransformPrimitive,
 )
 
 
 def register():
     from bpy.utils import register_class
+    for cls in node_classes:
+        register_class(cls)
     for cls in classes:
         register_class(cls)
 
@@ -90,6 +99,8 @@ def unregister():
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
+        unregister_class(cls)
+    for cls in reversed(node_classes):
         unregister_class(cls)
 
 

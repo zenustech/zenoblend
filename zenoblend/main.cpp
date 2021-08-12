@@ -23,6 +23,15 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         return id;
     });
 
+    m.def("sceneSwitchToGraph", []
+            ( int sceneId
+            , std::string const &graphName
+            ) -> void
+    {
+        auto const &scene = scenes.at(sceneId);
+        scene->switchGraph(graphName);
+    });
+
     m.def("sceneGetCurrentGraph", []
             ( int sceneId
             ) -> uintptr_t
@@ -32,7 +41,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         return reinterpret_cast<uintptr_t>(graph);
     });
 
-    m.def("sceneLoadCommandList", []
+    m.def("sceneLoadFromJson", []
             ( int sceneId
             , const char *jsonStr
             ) -> void
@@ -102,10 +111,12 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             ) -> void
     {
         auto prim = reinterpret_cast<zeno::PrimitiveObject *>(primPtr);
-        auto vert = reinterpret_cast<MVert const *>(vertPtr);
-        auto &pos = prim->add_attr<zeno::vec3f>("pos");
+        auto vert = reinterpret_cast<MVert *>(vertPtr);
+        auto &pos = prim->attr<zeno::vec3f>("pos");
         for (int i = 0; i < vertCount; i++) {
-            pos[i] = {vert[i].co[0], vert[i].co[1], vert[i].co[2]};
+            vert[i].co[0] = pos[i][0];
+            vert[i].co[1] = pos[i][1];
+            vert[i].co[2] = pos[i][2];
         }
     });
 

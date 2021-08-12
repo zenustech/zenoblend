@@ -7,12 +7,7 @@ namespace py = pybind11;
 #include <blender/DNA_meshdata_types.h>
 
 #include <zeno/zeno.h>
-
-struct BlenderMesh : zeno::IObjectClone<BlenderMesh> {
-    std::vector<zeno::vec3f> vert;
-    std::vector<std::tuple<int, int>> poly;
-    std::vector<int> loop;
-}
+#include <zeno/types/BlenderMesh.h>
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -61,7 +56,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto mesh = std::make_shared<BlenderMesh>();
+        auto mesh = std::make_shared<zeno::BlenderMesh>();
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         graph->setGraphInput(inputName, std::move(mesh));
         return meshPtr;
@@ -92,7 +87,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             , size_t vertCount
             ) -> void
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         mesh->vert.resize(vertCount);
         auto vert = reinterpret_cast<MVert const *>(vertPtr);
         for (int i = 0; i < vertCount; i++) {
@@ -104,7 +99,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             ( uintptr_t meshPtr
             ) -> size_t
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         return mesh->vert.size();
     });
 
@@ -114,7 +109,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             , size_t vertCount
             ) -> void
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto vert = reinterpret_cast<MVert *>(vertPtr);
         for (int i = 0; i < vertCount; i++) {
             vert[i].co[0] = mesh->vert[i][0];
@@ -129,7 +124,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             , size_t polyCount
             ) -> void
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         mesh->poly.resize(polyCount);
         auto poly = reinterpret_cast<MPoly const *>(polyPtr);
         for (int i = 0; i < polyCount; i++) {
@@ -141,7 +136,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             ( uintptr_t meshPtr
             ) -> size_t
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         return mesh->poly.size();
     });
 
@@ -151,7 +146,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             , size_t polyCount
             ) -> void
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto poly = reinterpret_cast<MPoly *>(polyPtr);
         for (int i = 0; i < polyCount; i++) {
             std::tie(poly[i].loopstart, poly[i].totloop) = mesh->poly[i];
@@ -164,8 +159,8 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             , size_t loopCount
             ) -> void
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
-        mesh->poly.resize(polyCount);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        mesh->loop.resize(loopCount);
         auto loop = reinterpret_cast<MLoop const *>(loopPtr);
         for (int i = 0; i < loopCount; i++) {
             mesh->loop[i] = loop[i].v;
@@ -176,7 +171,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             ( uintptr_t meshPtr
             ) -> size_t
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         return mesh->loop.size();
     });
 
@@ -186,7 +181,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             , size_t loopCount
             ) -> void
     {
-        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto loop = reinterpret_cast<MLoop *>(loopPtr);
         for (int i = 0; i < loopCount; i++) {
             loop[i].v = mesh->loop[i];

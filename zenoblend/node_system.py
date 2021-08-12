@@ -38,16 +38,23 @@ def add_node_class(name, inputs, outputs, category):
         'int': 'NodeSocketInt',
         'float': 'NodeSocketFloat',
         'vec3f': 'NodeSocketVector',
+        'color3f': 'NodeSocketColor',
+        'string': 'NodeSocketString',
     }
 
     def eval_type(type):
         return type_lut.get(type, 'ZenoNodeSocket')
 
-    def eval_defl(socket, defl):
+    def eval_defl(socket, defl, type):
         try:
-            socket.default_value = eval(defl)
-        except SyntaxError:
-            pass
+            if type == 'int':
+                return int(defl)
+            elif type == 'float':
+                return float(defl)
+            elif type == 'string':
+                return str(defl)
+        except ValueError:
+            return None
 
     class Def(Node, ZenoTreeNode):
         bl_idname = 'ZenoNode_' + name
@@ -59,7 +66,9 @@ def add_node_class(name, inputs, outputs, category):
                 type = eval_type(type)
                 socket = self.inputs.new(type, name)
                 if defl:
-                    eval_defl(socket, defl)
+                    defl = eval_defl(defl)
+                    if defl is not None:
+                        socket.default_value = defl
 
             for type, name, defl in outputs:
                 type = eval_type(type)

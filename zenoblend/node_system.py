@@ -45,7 +45,7 @@ def add_node_class(name, inputs, outputs, category):
     def eval_type(type):
         return type_lut.get(type, 'ZenoNodeSocket')
 
-    def eval_defl(socket, defl, type):
+    def eval_defl(defl, type):
         try:
             if type == 'int':
                 return int(defl)
@@ -63,16 +63,15 @@ def add_node_class(name, inputs, outputs, category):
 
         def init(self, context):
             for type, name, defl in inputs:
-                type = eval_type(type)
-                socket = self.inputs.new(type, name)
+                socket = self.inputs.new(eval_type(type), name)
                 if defl:
-                    defl = eval_defl(defl)
+                    defl = eval_defl(defl, type)
                     if defl is not None:
                         socket.default_value = defl
 
             for type, name, defl in outputs:
                 type = eval_type(type)
-                socket = self.outputs.new(type, name)
+                socket = self.outputs.new(eval_type(type), name)
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name

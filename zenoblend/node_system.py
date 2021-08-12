@@ -40,6 +40,15 @@ def add_node_class(name, inputs, outputs, category):
         'vec3f': 'NodeSocketVector',
     }
 
+    def eval_type(type):
+        return type_lut.get(type, 'ZenoNodeSocket')
+
+    def eval_defl(socket, defl):
+        try:
+            socket.default_value = eval(defl)
+        except SyntaxError:
+            pass
+
     class Def(Node, ZenoTreeNode):
         bl_idname = 'ZenoNode_' + name
         bl_label = name
@@ -47,13 +56,13 @@ def add_node_class(name, inputs, outputs, category):
 
         def init(self, context):
             for type, name, defl in inputs:
-                type = type_lut.get(type, 'ZenoNodeSocket')
+                type = eval_type(type)
                 socket = self.inputs.new(type, name)
                 if defl:
-                    socket.default_value = eval(defl)
+                    eval_defl(socket, defl)
 
             for type, name, defl in outputs:
-                type = type_lut.get(type, 'ZenoNodeSocket')
+                type = eval_type(type)
                 socket = self.outputs.new(type, name)
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
@@ -78,22 +87,19 @@ def get_descriptors():
         inputs = [x.split('@') for x in inputs]
         outputs = [x.split('@') for x in outputs]
         params = [x.split('@') for x in params]
-        inputs += [(x, 'param_' + y, z) for x, y, z in params]
+        inputs += [(x, 'param_' + y, z.split(' ')[0]) for x, y, z in params]
         res.append((title, inputs, outputs, category))
     return res
 
 
 def init_node_classes():
     descs = get_descriptors()
-    print(descs)
 
     node_classes.clear()
     node_pre_categories.clear()
 
-    add_node_class('TransformPrimitive',
-            [('int', 'inner', '42'), ('float', 'second', '3.142')],
-            [('float', 'outer', '')],
-            'primitive')
+    for title, inputs, outputs, category in descs:
+        add_node_class(title, inputs, outputs, category)
 
     init_node_categories()
 

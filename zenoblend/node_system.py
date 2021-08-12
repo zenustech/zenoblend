@@ -31,6 +31,7 @@ class ZenoTreeNode:
 node_classes = []
 node_pre_categories = {}
 node_categories = []
+node_descriptors = []
 
 
 def add_node_class(name, inputs, outputs, category):
@@ -80,7 +81,7 @@ def add_node_class(name, inputs, outputs, category):
     return Def
 
 def get_descriptors():
-    res = []
+    node_descriptors.clear()
     from .dll import core
     descs = core.dumpDescriptors()
     for desc in descs.splitlines():
@@ -96,17 +97,16 @@ def get_descriptors():
         outputs = [x.split('@') for x in outputs]
         params = [x.split('@') for x in params]
         inputs += [(x, y + ':', z.split(' ')[0]) for x, y, z in params]
-        res.append((title, inputs, outputs, category))
-    return res
+        node_descriptors.append((title, inputs, outputs, category))
 
 
 def init_node_classes():
-    descs = get_descriptors()
+    get_descriptors()
 
     node_classes.clear()
     node_pre_categories.clear()
 
-    for title, inputs, outputs, category in descs:
+    for title, inputs, outputs, category in node_descriptors:
         add_node_class(title, inputs, outputs, category)
 
     init_node_categories()

@@ -41,7 +41,6 @@ def add_node_class(name, inputs, outputs, category):
     }
 
     class Def(Node, ZenoTreeNode):
-        '''Zeno node from ZDK: ''' + name
         bl_idname = 'ZenoNode_' + name
         bl_label = name
         bl_icon = 'NODETREE'
@@ -57,13 +56,37 @@ def add_node_class(name, inputs, outputs, category):
                 type = type_lut.get(type, 'ZenoNodeSocket')
                 socket = self.outputs.new(type, name)
 
+    Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
     node_classes.append(Def)
     node_pre_categories.setdefault(category, []).append(Def.__name__)
     return Def
 
+def get_descriptors():
+    res = []
+    from .dll import core
+    descs = core.dumpDescriptors()
+    for desc in descs.splitlines():
+        if not desc.startswith('DESC@'):
+            continue
+        _, title, rest = desc.split('@', 2)
+        assert rest[0] == '{' and rest[-1] == '}', rest
+        inputs, outputs, params, category = rest[1:-1].split('}{')
+        inputs = inputs.split('%') if inputs else []
+        outputs = outputs.split('%') if outputs else []
+        params = params.split('%') if params else []
+        inputs = [x.split('@') for x in inputs]
+        outputs = [x.split('@') for x in outputs]
+        params = [x.split('@') for x in params]
+        inputs += [(x, 'param_' + y, z) for x, y, z in params]
+        res.append((title, inputs, outputs, category))
+    return res
+
 
 def init_node_classes():
+    descs = get_descriptors()
+    print(descs)
+
     node_classes.clear()
     node_pre_categories.clear()
 

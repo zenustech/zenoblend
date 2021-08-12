@@ -61,6 +61,7 @@ def add_node_class(name, inputs, outputs, category):
         bl_idname = 'ZenoNode_' + name
         bl_label = name
         bl_icon = 'NODETREE'
+        zeno_type = name
 
         def init(self, context):
             for type, name, defl in inputs:
@@ -98,6 +99,29 @@ def get_descriptors():
         params = [x.split('@') for x in params]
         inputs += [(x, y + ':', z.split(' ')[0]) for x, y, z in params]
         node_descriptors.append((title, inputs, outputs, category))
+
+
+def test_dump():
+    json = list(dump_tree(bpy.data.node_groups[0]))
+
+def dump_tree(tree):
+    yield ('clearAllState',)
+    yield ('switchGraph', 'main')
+    for node_name, node in tree.nodes.items():
+        node_type = node.zeno_type
+        yield ('addNode', node_type, node_name)
+        for input_name, input in node.inputs.items():
+            if input.is_linked:
+                assert len(input.links) == 1
+                link = input.links[0]
+                src_node_name = link.from_node.name
+                src_socket_name = link.from_socket.name
+                yield ('bindNodeInput', node_name, input_name,
+                        src_node_name, src_socket_name)
+            elif hasattr(input, 'default_value'):
+                value = input.default_value
+                yield ('setNodeInput', node_name, input_name, value)
+        yield ('completeNode', node_name)
 
 
 def init_node_classes():

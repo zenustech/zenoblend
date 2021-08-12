@@ -22,11 +22,13 @@ bl_info = {
 from . import (
     #mesh_ops,
     node_system,
+    execute_operator,
 )
 
 modules = (
     #mesh_ops,
     node_system,
+    execute_operator,
 )
 
 

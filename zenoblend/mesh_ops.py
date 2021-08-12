@@ -41,9 +41,9 @@ def meshToBlender(meshPtr, mesh):
     mesh.update()
 
 
-def execute_graph(json):
+def execute_graph(jsonStr):
     sceneId = core.createScene()
-    core.sceneLoadFromJson(sceneId, json)
+    core.sceneLoadFromJson(sceneId, jsonStr)
 
     core.sceneSwitchToGraph(sceneId, 'main')
     graphPtr = core.sceneGetCurrentGraph(sceneId)

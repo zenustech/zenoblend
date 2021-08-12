@@ -47,13 +47,15 @@ def add_node_class(name, inputs, outputs, category):
         bl_icon = 'NODETREE'
 
         def init(self, context):
-            for type, name in inputs:
+            for type, name, defl in inputs:
                 type = type_lut.get(type, 'ZenoNodeSocket')
-                self.inputs.new(type, name)
+                socket = self.inputs.new(type, name)
+                if defl:
+                    socket.default_value = eval(defl)
 
-            for type, name in outputs:
+            for type, name, defl in outputs:
                 type = type_lut.get(type, 'ZenoNodeSocket')
-                self.outputs.new(type, name)
+                socket = self.outputs.new(type, name)
 
     Def.__name__ = 'ZenoNode_' + name
     node_classes.append(Def)
@@ -66,8 +68,8 @@ def init_node_classes():
     node_pre_categories.clear()
 
     add_node_class('TransformPrimitive',
-            [('int', 'inner'), ('float', 'second')],
-            [('float', 'outer')],
+            [('int', 'inner', '42'), ('float', 'second', '3.142')],
+            [('float', 'outer', '')],
             'primitive')
 
     init_node_categories()

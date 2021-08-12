@@ -7,6 +7,7 @@ import sys
 if repo_path not in sys.path:
     sys.path.insert(0, repo_path)
 
+print('====== restart ======')
 if 'zenoblend' in sys.modules:
     sys.modules['zenoblend'].unregister()
 

@@ -61,7 +61,6 @@ def demo():
 
 
 def register():
-    print('=== register ===')
     demo()
 
 

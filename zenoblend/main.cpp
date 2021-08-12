@@ -13,6 +13,13 @@ static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
 PYBIND11_MODULE(zenoblend_pybind11_module, m) {
 
+    m.def("dumpDescriptors", []
+            (
+            ) -> std::string
+    {
+        return zeno::dumpDescriptors();
+    });
+
     m.def("createScene", []
             (
             ) -> int

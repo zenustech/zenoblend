@@ -1,5 +1,5 @@
-import bpy
 from bpy.types import NodeTree, Node, NodeSocket
+from nodeitems_utils import NodeCategory, NodeItem
 
 
 class ZenoNodeTree(NodeTree):
@@ -27,15 +27,19 @@ class ZenoTreeNode:
         return ntree.bl_idname == 'ZenoNodeTree'
 
 
+
 node_classes = []
+node_pre_categories = {}
+node_categories = []
 
-type_lut = {
-    'int': 'NodeSocketInt',
-    'float': 'NodeSocketFloat',
-    'vec3f': 'NodeSocketVector',
-}
 
-def make_node_class(name, inputs, outputs):
+def add_node_class(name, inputs, outputs, category):
+    type_lut = {
+        'int': 'NodeSocketInt',
+        'float': 'NodeSocketFloat',
+        'vec3f': 'NodeSocketVector',
+    }
+
     class Def(Node, ZenoTreeNode):
         '''Zeno node from ZDK: ''' + name
         bl_idname = 'ZenoNode_' + name
@@ -53,16 +57,27 @@ def make_node_class(name, inputs, outputs):
 
     Def.__name__ = 'ZenoNode_' + name
     node_classes.append(Def)
+    node_pre_categories.setdefault(category, []).append(Def.__name__)
     return Def
 
-make_node_class('TransformPrimitive',
-        [('int', 'inner'), ('float', 'second')],
-        [('float', 'outer')],
-)
+
+def init_node_classes():
+    node_classes.clear()
+    node_pre_categories.clear()
+
+    add_node_class('TransformPrimitive',
+            [('int', 'inner'), ('float', 'second')],
+            [('float', 'outer')],
+            'primitive')
+
+    init_node_categories()
 
 
-import nodeitems_utils
-from nodeitems_utils import NodeCategory, NodeItem
+def init_node_categories():
+    node_categories.clear()
+    for name, node_names in node_pre_categories.items():
+        items = [NodeItem(n) for n in node_names]
+        node_categories.append(ZenoNodeCategory(name, name, items=items))
 
 
 class ZenoNodeCategory(NodeCategory):
@@ -71,12 +86,6 @@ class ZenoNodeCategory(NodeCategory):
         return context.space_data.tree_type == 'ZenoNodeTree'
 
 
-node_categories = [
-    # identifier, label, items list
-    ZenoNodeCategory('PRIMITIVE', "primitive", items=[
-        NodeItem("ZenoNode_TransformPrimitive"),
-    ]),
-]
 
 classes = (
     ZenoNodeTree,
@@ -85,17 +94,21 @@ classes = (
 
 
 def register():
+    init_node_classes()
+
     from bpy.utils import register_class
     for cls in node_classes:
         register_class(cls)
     for cls in classes:
         register_class(cls)
 
-    nodeitems_utils.register_node_categories('ZENO_NODES', node_categories)
+    from nodeitems_utils import register_node_categories
+    register_node_categories('ZENO_NODES', node_categories)
 
 
 def unregister():
-    nodeitems_utils.unregister_node_categories('ZENO_NODES')
+    from nodeitems_utils import unregister_node_categories
+    unregister_node_categories('ZENO_NODES')
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):

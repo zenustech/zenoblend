@@ -13,13 +13,14 @@ def meshFromBlender(meshPtr, mesh):
     vertPtr = mesh.vertices[0].as_pointer() if vertCount else 0
     core.meshSetVertices(meshPtr, vertPtr, vertCount)
 
+    loopCount = len(mesh.loops)
+    loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
+    core.meshSetLoops(meshPtr, loopPtr, loopCount)
+
     polyCount = len(mesh.polygons)
     polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
     core.meshSetPolygons(meshPtr, polyPtr, polyCount)
 
-    loopCount = len(mesh.loops)
-    loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
-    core.meshSetLoops(meshPtr, loopPtr, loopCount)
 
 def meshToBlender(meshPtr, mesh):
     mesh.clear_geometry()
@@ -30,19 +31,20 @@ def meshToBlender(meshPtr, mesh):
     vertPtr = mesh.vertices[0].as_pointer() if vertCount else 0
     core.meshGetVertices(meshPtr, vertPtr, vertCount)
 
-    polyCount = core.meshGetPolygonsCount(meshPtr)
-    mesh.polygons.add(polyCount)
-    assert polyCount == len(mesh.polygons), (polyCount, len(mesh.polygons))
-    polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
-    core.meshGetPolygons(meshPtr, polyPtr, polyCount)
-
     loopCount = core.meshGetLoopsCount(meshPtr)
     mesh.loops.add(loopCount)
     assert loopCount == len(mesh.loops), (loopCount, len(mesh.loops))
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
     core.meshGetLoops(meshPtr, loopPtr, loopCount)
 
+    polyCount = core.meshGetPolygonsCount(meshPtr)
+    mesh.polygons.add(polyCount)
+    assert polyCount == len(mesh.polygons), (polyCount, len(mesh.polygons))
+    polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
+    core.meshGetPolygons(meshPtr, polyPtr, polyCount)
+
     mesh.update()
+
 
 def demo():
     sceneId = core.createScene()

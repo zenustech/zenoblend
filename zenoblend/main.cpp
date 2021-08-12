@@ -185,6 +185,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         auto loop = reinterpret_cast<MLoop *>(loopPtr);
         for (int i = 0; i < loopCount; i++) {
             loop[i].v = mesh->loop[i];
+            loop[i].e = 0;
         }
     });
 

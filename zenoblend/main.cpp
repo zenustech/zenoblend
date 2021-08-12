@@ -7,7 +7,12 @@ namespace py = pybind11;
 #include <blender/DNA_meshdata_types.h>
 
 #include <zeno/zeno.h>
-#include <zeno/types/PrimitiveObject.h>
+
+struct BlenderMesh : zeno::IObjectClone<BlenderMesh> {
+    std::vector<zeno::vec3f> vert;
+    std::vector<std::tuple<int, int>> poly;
+    std::vector<int> loop;
+}
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -50,16 +55,16 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         scene->loadScene(jsonStr);
     });
 
-    m.def("graphCreateInputPrimitive", []
+    m.def("graphCreateInputMesh", []
             ( uintptr_t graphPtr
             , std::string const &inputName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto primPtr = reinterpret_cast<uintptr_t>(prim.get());
-        graph->setGraphInput(inputName, std::move(prim));
-        return primPtr;
+        auto mesh = std::make_shared<BlenderMesh>();
+        auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
+        graph->setGraphInput(inputName, std::move(mesh));
+        return meshPtr;
     });
 
     m.def("graphApply", []
@@ -70,53 +75,121 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         graph->applyGraph();
     });
 
-    m.def("graphGetOutputPrimitive", []
+    m.def("graphGetOutputMesh", []
             ( uintptr_t graphPtr
             , std::string const &outputName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto prim = graph->getGraphOutput(outputName);
-        auto primPtr = reinterpret_cast<uintptr_t>(prim.get());
-        return primPtr;
+        auto mesh = graph->getGraphOutput(outputName);
+        auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
+        return meshPtr;
     });
 
-    m.def("primitiveSetVertices", []
-            ( uintptr_t primPtr
+    m.def("meshSetVertices", []
+            ( uintptr_t meshPtr
             , uintptr_t vertPtr
             , size_t vertCount
             ) -> void
     {
-        auto prim = reinterpret_cast<zeno::PrimitiveObject *>(primPtr);
-        prim->resize(vertCount);
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        mesh->vert.resize(vertCount);
         auto vert = reinterpret_cast<MVert const *>(vertPtr);
-        auto &pos = prim->add_attr<zeno::vec3f>("pos");
         for (int i = 0; i < vertCount; i++) {
-            pos[i] = {vert[i].co[0], vert[i].co[1], vert[i].co[2]};
+            mesh->vert[i] = {vert[i].co[0], vert[i].co[1], vert[i].co[2]};
         }
     });
 
-    m.def("primitiveGetVerticesCount", []
-            ( uintptr_t primPtr
+    m.def("meshGetVerticesCount", []
+            ( uintptr_t meshPtr
             ) -> size_t
     {
-        auto prim = reinterpret_cast<zeno::PrimitiveObject *>(primPtr);
-        return prim->size();
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        return mesh->vert.size();
     });
 
-    m.def("primitiveGetVertices", []
-            ( uintptr_t primPtr
+    m.def("meshGetVertices", []
+            ( uintptr_t meshPtr
             , uintptr_t vertPtr
             , size_t vertCount
             ) -> void
     {
-        auto prim = reinterpret_cast<zeno::PrimitiveObject *>(primPtr);
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
         auto vert = reinterpret_cast<MVert *>(vertPtr);
-        auto &pos = prim->attr<zeno::vec3f>("pos");
         for (int i = 0; i < vertCount; i++) {
-            vert[i].co[0] = pos[i][0];
-            vert[i].co[1] = pos[i][1];
-            vert[i].co[2] = pos[i][2];
+            vert[i].co[0] = mesh->vert[i][0];
+            vert[i].co[1] = mesh->vert[i][1];
+            vert[i].co[2] = mesh->vert[i][2];
+        }
+    });
+
+    m.def("meshSetPolygons", []
+            ( uintptr_t meshPtr
+            , uintptr_t polyPtr
+            , size_t polyCount
+            ) -> void
+    {
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        mesh->poly.resize(polyCount);
+        auto poly = reinterpret_cast<MPoly const *>(polyPtr);
+        for (int i = 0; i < polyCount; i++) {
+            mesh->poly[i] = {poly[i].loopstart, poly[i].totloop};
+        }
+    });
+
+    m.def("meshGetPolygonsCount", []
+            ( uintptr_t meshPtr
+            ) -> size_t
+    {
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        return mesh->poly.size();
+    });
+
+    m.def("meshGetPolygons", []
+            ( uintptr_t meshPtr
+            , uintptr_t polyPtr
+            , size_t polyCount
+            ) -> void
+    {
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto poly = reinterpret_cast<MPoly *>(polyPtr);
+        for (int i = 0; i < polyCount; i++) {
+            std::tie(poly[i].loopstart, poly[i].totloop) = mesh->poly[i];
+        }
+    });
+
+    m.def("meshSetLoops", []
+            ( uintptr_t meshPtr
+            , uintptr_t loopPtr
+            , size_t loopCount
+            ) -> void
+    {
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        mesh->poly.resize(polyCount);
+        auto loop = reinterpret_cast<MLoop const *>(loopPtr);
+        for (int i = 0; i < loopCount; i++) {
+            mesh->loop[i] = loop[i].v;
+        }
+    });
+
+    m.def("meshGetLoopsCount", []
+            ( uintptr_t meshPtr
+            ) -> size_t
+    {
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        return mesh->loop.size();
+    });
+
+    m.def("meshGetLoops", []
+            ( uintptr_t meshPtr
+            , uintptr_t loopPtr
+            , size_t loopCount
+            ) -> void
+    {
+        auto mesh = reinterpret_cast<BlenderMesh *>(meshPtr);
+        auto loop = reinterpret_cast<MLoop *>(loopPtr);
+        for (int i = 0; i < loopCount; i++) {
+            loop[i].v = mesh->loop[i];
         }
     });
 

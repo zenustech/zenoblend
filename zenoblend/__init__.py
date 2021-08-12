@@ -20,11 +20,13 @@ bl_info = {
 
 
 from . import (
-    mesh_ops,
+    #mesh_ops,
+    node_system,
 )
 
 modules = (
-    mesh_ops,
+    #mesh_ops,
+    node_system,
 )
 
 

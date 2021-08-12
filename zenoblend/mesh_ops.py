@@ -1,11 +1,6 @@
 import bpy
 
-from . import zenoblend_pybind11_module as core
-
-
-with open('/home/bate/Codes/zeno-blender/external/zeno/a.json') as f:
-    jsonStr = f.read()
-    print('jsonStr = ', jsonStr)
+from .dll import core
 
 
 def meshFromBlender(meshPtr, mesh):
@@ -47,6 +42,10 @@ def meshToBlender(meshPtr, mesh):
 
 
 def demo():
+    with open('/home/bate/Codes/zeno-blender/external/zeno/a.json') as f:
+        jsonStr = f.read()
+        print('jsonStr = ', jsonStr)
+
     sceneId = core.createScene()
     core.sceneLoadFromJson(sceneId, jsonStr)
     core.sceneSwitchToGraph(sceneId, 'main')

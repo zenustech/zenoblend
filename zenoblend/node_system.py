@@ -96,7 +96,7 @@ def get_descriptors():
         inputs = [x.split('@') for x in inputs]
         outputs = [x.split('@') for x in outputs]
         params = [x.split('@') for x in params]
-        inputs += [(x, 'param_' + y, z.split(' ')[0]) for x, y, z in params]
+        inputs += [(x, y + ':', z.split(' ')[0]) for x, y, z in params]
         res.append((title, inputs, outputs, category))
     return res
 

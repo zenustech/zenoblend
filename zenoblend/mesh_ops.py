@@ -48,12 +48,12 @@ def execute_graph(jsonStr):
     core.sceneSwitchToGraph(sceneId, 'main')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
-    inMeshPtr = core.graphCreateInputMesh(graphPtr, 'inputMesh')
+    inMeshPtr = core.graphCreateInputMesh(graphPtr, 'input1')
     meshFromBlender(inMeshPtr, bpy.context.object.data)
 
     core.graphApply(graphPtr)
 
-    outMeshPtr = core.graphGetOutputMesh(graphPtr, 'outputMesh')
+    outMeshPtr = core.graphGetOutputMesh(graphPtr, 'output1')
     meshToBlender(outMeshPtr, bpy.context.object.data)
 
     core.deleteScene(sceneId)

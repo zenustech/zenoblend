@@ -11,11 +11,12 @@ class ZenoExecuteOperator(bpy.types.Operator):
         return context.active_object is not None
 
     def execute(self, context):
-        from .mesh_ops import execute_graph
         import json
+        from . import scenario
         data = list(dump_graph(bpy.data.node_groups['NodeTree']))
         data = json.dumps(data)
-        execute_graph(data)
+        scenario.load_scene(data)
+        scenario.execute_scene()
         return {'FINISHED'}
 
 

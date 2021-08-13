@@ -91,7 +91,7 @@ def execute_scene():
         meshToBlender(outMeshPtr, blenderMesh)
 
 
-def update_scene(*unused):
+def update_scene():
     if sceneId is None:
         return
     global lastFrameId

@@ -16,7 +16,7 @@ class ZenoApplyOperator(bpy.types.Operator):
         data = list(dump_graph(bpy.data.node_groups['NodeTree']))
         data = json.dumps(data)
         scenario.load_scene(data)
-        scenario.execute_scene()
+        scenario.update_scene()
         return {'FINISHED'}
 
 

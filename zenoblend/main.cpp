@@ -106,7 +106,9 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto mesh = graph->getGraphOutput(outputName);
+        auto output = graph->getGraphOutput(outputName);
+        auto mesh = std::dynamic_pointer_cast<zeno::BlenderMesh>(output);
+        if (!mesh) return (uintptr_t)0;
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;
     });

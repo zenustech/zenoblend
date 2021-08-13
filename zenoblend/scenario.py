@@ -42,6 +42,7 @@ def meshToBlender(meshPtr, mesh):
 
 
 sceneId = None
+lastFrameId = None
 
 
 def load_scene(jsonStr):
@@ -53,14 +54,14 @@ def load_scene(jsonStr):
 
 def delete_scene():
     global sceneId
+    global lastFrameId
+    lastFrameId = None
     if sceneId is not None:
         core.deleteScene(sceneId)
     sceneId = None
 
 
 def execute_scene():
-    if sceneId is None:
-        return
     core.sceneSwitchToGraph(sceneId, 'main')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
@@ -90,10 +91,20 @@ def execute_scene():
         meshToBlender(outMeshPtr, blenderMesh)
 
 
+def update_scene(*unused):
+    if sceneId is None:
+        return
+    global lastFrameId
+    currFrameId = bpy.context.scene.frame_current
+    if lastFrameId is None or currFrameId == lastFrameId + 1:
+        print('executing frame:', currFrameId)
+        execute_scene()
+        lastFrameId = currFrameId
+
+
 @bpy.app.handlers.persistent
-def frame_update_callback(scene, *unused):
-    #frameid = scene.frame_current  # TODO: caching
-    execute_scene()
+def frame_update_callback(*unused):
+    update_scene()
 
 
 def register():
@@ -102,5 +113,6 @@ def register():
 
 
 def unregister():
+    delete_scene()
     if frame_update_callback in bpy.app.handlers.frame_change_pre:
         bpy.app.handlers.frame_change_pre.remove(frame_update_callback)

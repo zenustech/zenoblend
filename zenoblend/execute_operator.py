@@ -1,14 +1,14 @@
 import bpy
 
 
-class ZenoExecuteOperator(bpy.types.Operator):
-    """Execute the Zeno graph"""
-    bl_idname = "node.zeno_execute"
-    bl_label = "Execute"
+class ZenoApplyOperator(bpy.types.Operator):
+    """Apply the Zeno graph"""
+    bl_idname = "node.zeno_apply"
+    bl_label = "Apply"
 
     @classmethod
     def poll(cls, context):
-        return context.active_object is not None
+        return 'NodeTree' in bpy.data.node_groups
 
     def execute(self, context):
         import json
@@ -23,17 +23,17 @@ class ZenoExecuteOperator(bpy.types.Operator):
 def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
-        self.layout.operator("node.zeno_execute", text="Execute Zeno Graph")
+        self.layout.operator("node.zeno_apply", text="Apply Zeno Graph")
 
 
 def register():
-    bpy.utils.register_class(ZenoExecuteOperator)
+    bpy.utils.register_class(ZenoApplyOperator)
     bpy.types.NODE_MT_context_menu.append(draw_menu)
 
 
 def unregister():
     bpy.types.NODE_MT_context_menu.remove(draw_menu)
-    bpy.utils.unregister_class(ZenoExecuteOperator)
+    bpy.utils.unregister_class(ZenoApplyOperator)
 
 
 def dump_graph(tree):

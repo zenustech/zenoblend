@@ -3,18 +3,17 @@ import bpy
 from .dll import core
 
 
-def meshFromBlender(meshPtr, mesh):
+def meshFromBlender(mesh):
     vertCount = len(mesh.vertices)
     vertPtr = mesh.vertices[0].as_pointer() if vertCount else 0
-    core.meshSetVertices(meshPtr, vertPtr, vertCount)
 
     loopCount = len(mesh.loops)
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
-    core.meshSetLoops(meshPtr, loopPtr, loopCount)
 
     polyCount = len(mesh.polygons)
     polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
-    core.meshSetPolygons(meshPtr, polyPtr, polyCount)
+
+    return vertPtr, vertCount, loopPtr, loopCount, polyPtr, polyCount
 
 
 def meshToBlender(meshPtr, mesh):
@@ -67,19 +66,19 @@ def execute_scene():
 
     inputNames = core.graphGetEndpointNames(graphPtr)
     for inputName in inputNames:
-        inMeshPtr = core.graphCreateInputMesh(graphPtr, inputName)
         if inputName not in bpy.data.objects:
             raise RuntimeError('No object named `{}` in scene'.format(inputName))
         else:
             blenderObj = bpy.data.objects[inputName]
             blenderMesh = blenderObj.data
-        meshFromBlender(inMeshPtr, blenderMesh)
+        meshData = meshFromBlender(blenderMesh)
+        core.graphSetEndpointMesh(graphPtr, inputName, *meshData)
 
     core.graphApply(graphPtr)
 
     outputNames = core.graphGetEndpointSetNames(graphPtr)
     for outputName in outputNames:
-        outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
+        outMeshPtr = core.graphGetEndpointSetMesh(graphPtr, outputName)
         if outputName not in bpy.data.objects:
             blenderMesh = bpy.data.meshes.new(outputName)
             blenderObj = bpy.data.objects.new(outputName, blenderMesh)

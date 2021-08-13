@@ -66,7 +66,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
 
     m.def("graphGetInputNames", []
             ( uintptr_t graphPtr
-            ) -> std::vector<std::string>
+            ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
         return graph->getGraphInputNames();
@@ -74,7 +74,7 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
 
     m.def("graphGetOutputNames", []
             ( uintptr_t graphPtr
-            ) -> std::vector<std::string>
+            ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
         return graph->getGraphOutputNames();

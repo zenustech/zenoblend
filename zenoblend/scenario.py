@@ -65,9 +65,7 @@ def execute_scene():
     core.sceneSwitchToGraph(sceneId, 'main')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
-    inputNames = core.graphGetInputNames(graphPtr)
-    outputNames = core.graphGetOutputNames(graphPtr)
-
+    inputNames = core.graphGetEndpointNames(graphPtr)
     for inputName in inputNames:
         inMeshPtr = core.graphCreateInputMesh(graphPtr, inputName)
         if inputName not in bpy.data.objects:
@@ -79,6 +77,7 @@ def execute_scene():
 
     core.graphApply(graphPtr)
 
+    outputNames = core.graphGetEndpointSetNames(graphPtr)
     for outputName in outputNames:
         outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
         if outputName not in bpy.data.objects:

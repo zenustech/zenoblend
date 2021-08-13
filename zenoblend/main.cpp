@@ -64,32 +64,20 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         scene->loadScene(jsonStr);
     });
 
-    m.def("graphGetInputNames", []
+    m.def("graphGetEndpointNames", []
             ( uintptr_t graphPtr
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        return graph->getGraphInputNames();
+        return graph->getGraphEndpointNames();
     });
 
-    m.def("graphGetOutputNames", []
+    m.def("graphGetEndpointSetNames", []
             ( uintptr_t graphPtr
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        return graph->getGraphOutputNames();
-    });
-
-    m.def("graphCreateInputMesh", []
-            ( uintptr_t graphPtr
-            , std::string const &inputName
-            ) -> uintptr_t
-    {
-        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto mesh = std::make_shared<zeno::BlenderMesh>();
-        auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
-        graph->setGraphInput(inputName, std::move(mesh));
-        return meshPtr;
+        return graph->getGraphEndpointSetNames();
     });
 
     m.def("graphApply", []
@@ -100,29 +88,49 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         graph->applyGraph();
     });
 
-    m.def("graphGetOutputMesh", []
+    m.def("graphSetEndpointMesh", []
             ( uintptr_t graphPtr
-            , std::string const &outputName
+            , std::string endpName
+            , uintptr_t vertPtr
+            , size_t vertCount
+            , uintptr_t loopPtr
+            , size_t loopCount
+            , uintptr_t polyPtr
+            , size_t polyCount
+            ) -> void
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        graph->setGraphEndpointGetter(endpName, [=] () -> zeno::any {
+            auto mesh = std::make_shared<zeno::BlenderMesh>();
+            mesh->vert.resize(vertCount);
+            auto vert = reinterpret_cast<MVert const *>(vertPtr);
+            for (int i = 0; i < vertCount; i++) {
+                mesh->vert[i] = {vert[i].co[0], vert[i].co[1], vert[i].co[2]};
+            }
+            mesh->loop.resize(loopCount);
+            auto loop = reinterpret_cast<MLoop const *>(loopPtr);
+            for (int i = 0; i < loopCount; i++) {
+                mesh->loop[i] = loop[i].v;
+            }
+            mesh->poly.resize(polyCount);
+            auto poly = reinterpret_cast<MPoly const *>(polyPtr);
+            for (int i = 0; i < polyCount; i++) {
+                mesh->poly[i] = {poly[i].loopstart, poly[i].totloop};
+            }
+            return mesh;
+        });
+    });
+
+    m.def("graphGetEndpointSetMesh", []
+            ( uintptr_t graphPtr
+            , std::string const &endpName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto mesh = graph->getGraphOutput<zeno::BlenderMesh>(outputName);
+        auto meshAny = graph->getGraphEndpointSetValue(endpName);
+        auto mesh = zeno::smart_any_cast<std::shared_ptr<zeno::BlenderMesh>>(meshAny);
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;
-    });
-
-    m.def("meshSetVertices", []
-            ( uintptr_t meshPtr
-            , uintptr_t vertPtr
-            , size_t vertCount
-            ) -> void
-    {
-        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
-        mesh->vert.resize(vertCount);
-        auto vert = reinterpret_cast<MVert const *>(vertPtr);
-        for (int i = 0; i < vertCount; i++) {
-            mesh->vert[i] = {vert[i].co[0], vert[i].co[1], vert[i].co[2]};
-        }
     });
 
     m.def("meshGetVerticesCount", []
@@ -148,20 +156,6 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         }
     });
 
-    m.def("meshSetPolygons", []
-            ( uintptr_t meshPtr
-            , uintptr_t polyPtr
-            , size_t polyCount
-            ) -> void
-    {
-        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
-        mesh->poly.resize(polyCount);
-        auto poly = reinterpret_cast<MPoly const *>(polyPtr);
-        for (int i = 0; i < polyCount; i++) {
-            mesh->poly[i] = {poly[i].loopstart, poly[i].totloop};
-        }
-    });
-
     m.def("meshGetPolygonsCount", []
             ( uintptr_t meshPtr
             ) -> size_t
@@ -180,20 +174,6 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         auto poly = reinterpret_cast<MPoly *>(polyPtr);
         for (int i = 0; i < polyCount; i++) {
             std::tie(poly[i].loopstart, poly[i].totloop) = mesh->poly[i];
-        }
-    });
-
-    m.def("meshSetLoops", []
-            ( uintptr_t meshPtr
-            , uintptr_t loopPtr
-            , size_t loopCount
-            ) -> void
-    {
-        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
-        mesh->loop.resize(loopCount);
-        auto loop = reinterpret_cast<MLoop const *>(loopPtr);
-        for (int i = 0; i < loopCount; i++) {
-            mesh->loop[i] = loop[i].v;
         }
     });
 

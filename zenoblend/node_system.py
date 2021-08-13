@@ -48,6 +48,9 @@ def add_node_class(name, inputs, outputs, category):
         'vec3f': 'NodeSocketVector',
         'color3f': 'NodeSocketColor',
         'string': 'NodeSocketString',
+        'readpath': 'NodeSocketString',
+        'writepath': 'NodeSocketString',
+        'multiline_string': 'NodeSocketString',
     }
 
     def eval_type(type):

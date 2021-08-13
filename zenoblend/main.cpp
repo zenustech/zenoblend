@@ -64,6 +64,22 @@ PYBIND11_MODULE(zenoblend_pybind11_module, m) {
         scene->loadScene(jsonStr);
     });
 
+    m.def("graphGetInputNames", []
+            ( uintptr_t graphPtr
+            ) -> std::vector<std::string>
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        return graph->getGraphInputNames();
+    });
+
+    m.def("graphGetOutputNames", []
+            ( uintptr_t graphPtr
+            ) -> std::vector<std::string>
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        return graph->getGraphOutputNames();
+    });
+
     m.def("graphCreateInputMesh", []
             ( uintptr_t graphPtr
             , std::string const &inputName

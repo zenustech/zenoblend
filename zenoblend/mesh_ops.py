@@ -48,13 +48,27 @@ def execute_graph(jsonStr):
     core.sceneSwitchToGraph(sceneId, 'main')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
-    inMeshPtr = core.graphCreateInputMesh(graphPtr, 'input1')
-    meshFromBlender(inMeshPtr, bpy.context.object.data)
+    inputNames = core.graphGetInputNames()
+    outputNames = core.graphGetOutputNames()
+
+    for inputName in inputNames:
+        inMeshPtr = core.graphCreateInputMesh(graphPtr, inputName)
+        if inputName not in bpy.data.objects:
+            raise RuntimeError('No object named `{}` in scene'.format(inputName))
+        else:
+            blenderObj = bpy.data.objects[inputName]
+        meshFromBlender(inMeshPtr, blenderMesh)
 
     core.graphApply(graphPtr)
 
-    outMeshPtr = core.graphGetOutputMesh(graphPtr, 'output1')
-    meshToBlender(outMeshPtr, bpy.context.object.data)
+    for outputName in outputNames:
+        outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
+        if outputName not in bpy.data.objects:
+            blenderMesh = bpy.data.meshes.new(outputname)
+            blenderObj = bpy.data.objects.new(outputName, blenderMesh)
+        else:
+            blenderObj = bpy.data.objects[outputName]
+        meshToBlender(outMeshPtr, blenderMesh)
 
     core.deleteScene(sceneId)
 

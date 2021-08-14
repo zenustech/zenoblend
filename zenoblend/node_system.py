@@ -41,7 +41,7 @@ node_categories = []
 node_descriptors = []
 
 
-def add_node_class(name, inputs, outputs, category):
+def add_node_class(name, inputs, outputs, category, update=None):
     type_lut = {
         'int': 'NodeSocketInt',
         'float': 'NodeSocketFloat',
@@ -83,7 +83,41 @@ def add_node_class(name, inputs, outputs, category):
 
             for type, name, defl in outputs:
                 type = eval_type(type)
-                socket = self.outputs.new(eval_type(type), name)
+                self.outputs.new(eval_type(type), name)
+
+        def reinit(self):
+            links = []
+            for name, socket in self.inputs.items():
+                for link in socket.links:
+                    links.append((
+                        link.from_node, link.from_socket.name,
+                        link.to_node, link.to_socket.name,
+                        ))
+                self.inputs.remove(socket)
+            for name, socket in self.outputs.items():
+                for link in socket.links:
+                    links.append((
+                        link.from_node, link.from_socket.name,
+                        link.to_node, link.to_socket.name,
+                        ))
+                self.outputs.remove(socket)
+
+            node_tree = self.id_data
+            for from_node, from_socket, to_node, to_socket in links:
+                from_socket = from_node.inputs[from_socket]
+                to_socket = to_node.inputs[to_socket]
+                node_tree.links.add(from_socket, to_socket)
+
+            for type, name, defl in inputs:
+                socket = self.inputs.new(eval_type(type), name)
+                if defl:
+                    defl = eval_defl(defl, type)
+                    if defl is not None:
+                        socket.default_value = defl
+
+            for type, name, defl in outputs:
+                type = eval_type(type)
+                self.outputs.new(eval_type(type), name)
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name

@@ -5,4 +5,3 @@ pybind11_add_module(pylib_zenoblend ${ZENOBLEND_SOURCE})
 
 target_include_directories(pylib_zenoblend PRIVATE .)
 target_link_libraries(pylib_zenoblend PRIVATE zeno)
-target_link_libraries(pylib_zenoblend PRIVATE zeno_linkall)

@@ -11,7 +11,7 @@ namespace py = pybind11;
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
-PYBIND11_MODULE(zenoblend_pybind11_module, m) {
+PYBIND11_MODULE(pylib_zenoblend, m) {
 
     m.def("dumpDescriptors", []
             (

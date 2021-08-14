@@ -1,21 +1,8 @@
 set(CMAKE_LINK_WHAT_YOU_USE TRUE)
 
 file(GLOB ZENOBLEND_SOURCE "*.cpp" "*.hpp" "*.h")
-pybind11_add_module(zenoblend_pybind11_module ${ZENOBLEND_SOURCE})
+pybind11_add_module(pylib_zenoblend ${ZENOBLEND_SOURCE})
 
-target_include_directories(zenoblend_pybind11_module PRIVATE .)
-target_link_libraries(zenoblend_pybind11_module PRIVATE zeno)
-target_link_libraries(zenoblend_pybind11_module PRIVATE zeno_linkall)
-
-set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenoblend)
-set_target_properties(zenoblend_pybind11_module PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-	RUNTIME_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${OUTPUT_DIR}
-	LIBRARY_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-	ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${OUTPUT_DIR}
-	)
+target_include_directories(pylib_zenoblend PRIVATE .)
+target_link_libraries(pylib_zenoblend PRIVATE zeno)
+target_link_libraries(pylib_zenoblend PRIVATE zeno_linkall)

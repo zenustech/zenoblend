@@ -5,9 +5,7 @@ pybind11_add_module(zenoblend_pybind11_module ${ZENOBLEND_SOURCE})
 
 target_include_directories(zenoblend_pybind11_module PRIVATE .)
 target_link_libraries(zenoblend_pybind11_module PRIVATE zeno)
-target_link_libraries(zenoblend_pybind11_module PRIVATE zeno_bmeshops)
-target_link_libraries(zenoblend_pybind11_module PRIVATE zeno_ZenoFX)
-target_link_libraries(zenoblend_pybind11_module PRIVATE zeno_zenvdb)
+target_link_libraries(zenoblend_pybind11_module PRIVATE zeno_linkall)
 
 set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenoblend)
 set_target_properties(zenoblend_pybind11_module PROPERTIES

@@ -9,12 +9,6 @@ class ZenoNodeTree(NodeTree):
     bl_label = "Zeno Node Tree"
     bl_icon = 'NODETREE'
 
-    def draw_buttons(self, *args):
-        print('!!!', args)
-
-    def draw(self, *args):
-        print('???', args)
-
 
 class ZenoNodeSocket(NodeSocket):
     '''Zeno node socket type'''
@@ -26,6 +20,18 @@ class ZenoNodeSocket(NodeSocket):
 
     def draw_color(self, context, node):
         return (1.0, 0.4, 0.216, 1.0)
+
+
+class ZenoNodeSocketDummy(NodeSocket):
+    '''Zeno node dummy socket type'''
+    bl_idname = 'ZenoNodeSocketDummy'
+    bl_label = "Zeno Node Socket Dummy"
+
+    def draw(self, context, layout, node, text):
+        layout.label(text=text)
+
+    def draw_color(self, context, node):
+        return (0.4, 0.4, 0.4, 1.0)
 
 
 class ZenoTreeNode:
@@ -58,11 +64,11 @@ def add_node_class(name, inputs, outputs, category, update=None):
 
     def eval_defl(defl, type):
         try:
-            if type == 'int':
+            if type == 'NodeSocketInt':
                 return int(defl)
-            elif type == 'float':
+            elif type == 'NodeSocketFloat':
                 return float(defl)
-            elif type == 'string':
+            elif type == 'NodeSocketString':
                 return str(defl)
         except ValueError:
             return None
@@ -74,8 +80,12 @@ def add_node_class(name, inputs, outputs, category, update=None):
         zeno_type = name
 
         def init(self, context):
+            self.inputs.new('ZenoNodeSocketDummy', 'SRC')
+            self.outputs.new('ZenoNodeSocketDummy', 'DST')
+
             for type, name, defl in inputs:
-                socket = self.inputs.new(eval_type(type), name)
+                type = eval_type(type)
+                socket = self.inputs.new(type, name)
                 if defl:
                     defl = eval_defl(defl, type)
                     if defl is not None:
@@ -83,9 +93,16 @@ def add_node_class(name, inputs, outputs, category, update=None):
 
             for type, name, defl in outputs:
                 type = eval_type(type)
-                self.outputs.new(eval_type(type), name)
+                self.outputs.new(type, name)
 
         def reinit(self):
+            nonlocal inputs, outputs
+            if self.zeno_type == 'Subgraph':
+                tree_name = self.inputs['name:'].default_value
+                tree = bpy.data.node_groups[tree_name]
+                from .execute_operator import find_tree_sub_io_names
+                inputs, outputs = find_tree_sub_io_names(tree)
+
             links = []
             for name, socket in self.inputs.items():
                 for link in socket.links:
@@ -102,16 +119,7 @@ def add_node_class(name, inputs, outputs, category, update=None):
                         ))
                 self.outputs.remove(socket)
 
-            for type, name, defl in inputs:
-                socket = self.inputs.new(eval_type(type), name)
-                if defl:
-                    defl = eval_defl(defl, type)
-                    if defl is not None:
-                        socket.default_value = defl
-
-            for type, name, defl in outputs:
-                type = eval_type(type)
-                self.outputs.new(eval_type(type), name)
+            self.init(bpy.context)
 
             node_tree = self.id_data
             for from_node, from_socket, to_node, to_socket in links:
@@ -147,6 +155,8 @@ def get_descriptors():
         outputs = [x.split('@') for x in outputs]
         params = [x.split('@') for x in params]
         inputs += [(x, y + ':', z.split(' ')[0]) for x, y, z in params]
+        inputs = [(x, y, z) for x, y, z in inputs if y != 'SRC']
+        outputs = [(x, y, z) for x, y, z in outputs if y != 'DST']
         node_descriptors.append((title, inputs, outputs, category))
 
 
@@ -179,6 +189,7 @@ class ZenoNodeCategory(NodeCategory):
 classes = (
     ZenoNodeTree,
     ZenoNodeSocket,
+    ZenoNodeSocketDummy,
 )
 
 

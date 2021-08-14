@@ -36,6 +36,23 @@ def unregister():
     bpy.utils.unregister_class(ZenoApplyOperator)
 
 
+def find_tree_sub_io_names(tree):
+    inputs = []
+    outputs = []
+    for node_name, node in tree.nodes.items():
+        if node.zeno_type == 'SubInput':
+            type = node.inputs['type:'].default_value
+            name = node.inputs['name:'].default_value
+            defl = node.inputs['defl:'].default_value
+            inputs.append((type, name, defl))
+        elif node.zeno_type == 'SubOutput':
+            type = node.inputs['type:'].default_value
+            name = node.inputs['name:'].default_value
+            defl = node.inputs['defl:'].default_value
+            outputs.append((type, name, defl))
+    return inputs, outputs
+
+
 def dump_tree(tree):
     for node_name, node in tree.nodes.items():
         node_type = node.zeno_type

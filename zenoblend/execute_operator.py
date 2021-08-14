@@ -13,7 +13,7 @@ class ZenoApplyOperator(bpy.types.Operator):
     def execute(self, context):
         import json
         from . import scenario
-        data = list(dump_graph(bpy.data.node_groups['NodeTree']))
+        data = list(dump_all_trees())
         data = json.dumps(data)
         scenario.load_scene(data)
         scenario.update_scene()
@@ -36,9 +36,7 @@ def unregister():
     bpy.utils.unregister_class(ZenoApplyOperator)
 
 
-def dump_graph(tree):
-    yield ('clearAllState',)
-    yield ('switchGraph', 'main')
+def dump_tree(tree):
     for node_name, node in tree.nodes.items():
         node_type = node.zeno_type
         yield ('addNode', node_type, node_name)
@@ -54,3 +52,10 @@ def dump_graph(tree):
                 value = input.default_value
                 yield ('setNodeInput', node_name, input_name, value)
         yield ('completeNode', node_name)
+
+
+def dump_all_trees():
+    yield ('clearAllState',)
+    for name, tree in bpy.data.node_groups.items():
+        yield ('switchGraph', name)
+        yield from dump_tree(tree)

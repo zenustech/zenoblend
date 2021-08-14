@@ -9,12 +9,12 @@ bl_info = {
         'name': 'Zeno-Blend',
         'description': 'Blender intergration of the Zeno node system',
         'author': 'archibate <1931127624@qq.com>',
-        'version': (0, 0, 7),
-        'blender': (2, 81, 0),
+        'version': (0, 0, 1),
+        'blender': (2, 83, 0),
         'location': 'Zeno Node Tree',
         'support': 'COMMUNITY',
-        'wiki_url': 'https://github.com/archibate/zeno/wiki',
-        'tracker_url': 'https://github.com/archibate/zeno/issues',
+        'wiki_url': 'https://github.com/zenustech/zeno/wiki',
+        'tracker_url': 'https://github.com/zenustech/zeno/issues',
         'category': 'Physics',
 }
 

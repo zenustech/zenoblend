@@ -61,7 +61,7 @@ def delete_scene():
 
 
 def execute_scene():
-    core.sceneSwitchToGraph(sceneId, 'main')
+    core.sceneSwitchToGraph(sceneId, 'NodeTree')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
     inputNames = core.graphGetEndpointNames(graphPtr)

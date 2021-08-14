@@ -10,6 +10,19 @@ class ZenoNodeTree(NodeTree):
     bl_icon = 'NODETREE'
 
 
+class ZenoNodeCategory(NodeCategory):
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.tree_type == 'ZenoNodeTree'
+
+
+class ZenoTreeNode:
+    @classmethod
+    def poll(cls, ntree):
+        return ntree.bl_idname == 'ZenoNodeTree'
+
+
+
 class ZenoNodeSocket(NodeSocket):
     '''Zeno node socket type'''
     bl_idname = 'ZenoNodeSocket'
@@ -34,20 +47,8 @@ class ZenoNodeSocketDummy(NodeSocket):
         return (0.4, 0.4, 0.4, 1.0)
 
 
-class ZenoTreeNode:
-    @classmethod
-    def poll(cls, ntree):
-        return ntree.bl_idname == 'ZenoNodeTree'
 
-
-
-node_classes = []
-node_pre_categories = {}
-node_categories = []
-node_descriptors = []
-
-
-def add_node_class(name, inputs, outputs, category, update=None):
+def eval_type(type):
     type_lut = {
         'int': 'NodeSocketInt',
         'float': 'NodeSocketFloat',
@@ -58,21 +59,22 @@ def add_node_class(name, inputs, outputs, category, update=None):
         'writepath': 'NodeSocketString',
         'multiline_string': 'NodeSocketString',
     }
+    return type_lut.get(type, 'ZenoNodeSocket')
 
-    def eval_type(type):
-        return type_lut.get(type, 'ZenoNodeSocket')
 
-    def eval_defl(defl, type):
-        try:
-            if type == 'NodeSocketInt':
-                return int(defl)
-            elif type == 'NodeSocketFloat':
-                return float(defl)
-            elif type == 'NodeSocketString':
-                return str(defl)
-        except ValueError:
-            return None
+def eval_defl(defl, type):
+    try:
+        if type == 'NodeSocketInt':
+            return int(defl)
+        elif type == 'NodeSocketFloat':
+            return float(defl)
+        elif type == 'NodeSocketString':
+            return str(defl)
+    except ValueError:
+        return None
 
+
+def def_node_class(name, inputs, outputs, category):
     class Def(Node, ZenoTreeNode):
         bl_idname = 'ZenoNode_' + name
         bl_label = name
@@ -133,9 +135,8 @@ def add_node_class(name, inputs, outputs, category, update=None):
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
-    node_classes.append(Def)
-    node_pre_categories.setdefault(category, []).append(Def.__name__)
     return Def
+
 
 
 def get_descriptors():
@@ -160,6 +161,13 @@ def get_descriptors():
         node_descriptors.append((title, inputs, outputs, category))
 
 
+
+node_classes = []
+node_pre_categories = {}
+node_categories = []
+node_descriptors = []
+
+
 def init_node_classes():
     get_descriptors()
 
@@ -167,7 +175,7 @@ def init_node_classes():
     node_pre_categories.clear()
 
     for title, inputs, outputs, category in node_descriptors:
-        add_node_class(title, inputs, outputs, category)
+        register_node_class(def_node_class(title, inputs, outputs, category))
 
     init_node_categories()
 
@@ -179,10 +187,10 @@ def init_node_categories():
         node_categories.append(ZenoNodeCategory(name, name, items=items))
 
 
-class ZenoNodeCategory(NodeCategory):
-    @classmethod
-    def poll(cls, context):
-        return context.space_data.tree_type == 'ZenoNodeTree'
+def register_node_class(Def):
+    node_classes.append(Def)
+    node_pre_categories.setdefault(category, []).append(Def.__name__)
+    return Def
 
 
 

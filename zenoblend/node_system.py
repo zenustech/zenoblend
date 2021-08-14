@@ -102,12 +102,6 @@ def add_node_class(name, inputs, outputs, category, update=None):
                         ))
                 self.outputs.remove(socket)
 
-            node_tree = self.id_data
-            for from_node, from_socket, to_node, to_socket in links:
-                from_socket = from_node.inputs[from_socket]
-                to_socket = to_node.inputs[to_socket]
-                node_tree.links.add(from_socket, to_socket)
-
             for type, name, defl in inputs:
                 socket = self.inputs.new(eval_type(type), name)
                 if defl:
@@ -118,6 +112,16 @@ def add_node_class(name, inputs, outputs, category, update=None):
             for type, name, defl in outputs:
                 type = eval_type(type)
                 self.outputs.new(eval_type(type), name)
+
+            node_tree = self.id_data
+            for from_node, from_socket, to_node, to_socket in links:
+                if from_socket not in from_node.outputs:
+                    continue
+                if to_socket not in to_node.inputs:
+                    continue
+                from_socket = from_node.outputs[from_socket]
+                to_socket = to_node.inputs[to_socket]
+                node_tree.links.new(from_socket, to_socket)
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name

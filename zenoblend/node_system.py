@@ -62,6 +62,21 @@ def eval_type(type):
     return type_lut.get(type, 'ZenoNodeSocket')
 
 
+def eval_category_icon(type):
+    type_lut = {
+        'blendermesh': 'MESH_DATA',
+        'openvdb': 'FILE_VOLUME',
+        'primitive': 'PARTICLES',
+        'subgraph': 'NODETREE',
+        'Rigid': 'RIGID_BODY',
+        'FLIPSolver': 'MATFLUID',
+        'cloth': 'MATCLOTH',
+        'string': 'FILE_FOLDER',
+        'zenofx': 'PHYSICS',
+    }
+    return type_lut.get(type, 'NODETREE')
+
+
 def eval_defl(defl, type):
     try:
         if type == 'NodeSocketInt':
@@ -77,7 +92,7 @@ def eval_defl(defl, type):
 def def_node_class(name, inputs, outputs, category):
     class Def(Node, ZenoTreeNode):
         bl_label = name
-        bl_icon = 'NODETREE'
+        bl_icon = eval_category_icon(category)
         zeno_type = name
         zeno_category = category
 

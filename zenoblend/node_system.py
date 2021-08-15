@@ -152,7 +152,7 @@ class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
 
 
 def get_descriptors():
-    node_descriptors.clear()
+    node_descriptors = []
     from .dll import core
     descs = core.dumpDescriptors()
     for desc in descs.splitlines():
@@ -171,57 +171,68 @@ def get_descriptors():
         inputs = [(x, y, z) for x, y, z in inputs if y != 'SRC']
         outputs = [(x, y, z) for x, y, z in outputs if y != 'DST']
         node_descriptors.append((title, inputs, outputs, category))
+    return node_descriptors
 
 
 
 node_classes = []
 node_pre_categories = {}
-node_categories = []
-node_descriptors = []
 
 
 def init_node_classes():
-    get_descriptors()
+    node_descriptors = get_descriptors()
 
     node_classes.clear()
     node_pre_categories.clear()
 
     for title, inputs, outputs, category in node_descriptors:
-        register_node_class(def_node_class(title, inputs, outputs, category))
+        Def = def_node_class(title, inputs, outputs, category)
+        node_classes.append(Def)
+        node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)
 
-
-def init_node_categories():
-    def make_node_item(n):
-        if isinstance(n, tuple):
-            (graph_name,) = n
-            return NodeItem("ZenoNodeSubgraph", label=graph_name,
-                settings={"graph_name": repr(graph_name)})
-        else:
-            return NodeItem(n)
-
-    import copy
-    pre_categories = copy.deepcopy(node_pre_categories)
-
-    pre_categories.setdefault('mycate', []).append(('NodeTree.001',))
-
-    node_categories.clear()
-    for name, node_names in pre_categories.items():
-        items = [make_node_item(n) for n in node_names]
+    node_categories = []
+    for name, node_names in node_pre_categories.items():
+        items = [NodeItem(n) for n in node_names]
         node_categories.append(ZenoNodeCategory(name, name, items=items))
 
     from nodeitems_utils import register_node_categories
     register_node_categories('ZENO_NODES', node_categories)
 
 
+def deinit_node_classes():
+    from nodeitems_utils import unregister_node_categories
+    unregister_node_categories('ZENO_NODES')
+
+
+def init_node_subgraphs():
+    def make_node_item(graph_name):
+        return NodeItem("ZenoNodeSubgraph", label=graph_name,
+            settings={"graph_name": repr(graph_name)})
+
+    node_pre_subgraph_categories = {}
+    for tree_name, tree in bpy.data.node_groups.items():
+        from .execute_operator import find_tree_sub_category
+        category = find_tree_sub_category(tree)
+        node_pre_subgraph_categories.setdefault(category, []).append(tree_name)
+
+    node_subgraph_categories = []
+    for name, node_names in node_pre_subgraph_categories.items():
+        items = [make_node_item(n) for n in node_names]
+        node_subgraph_categories.append(ZenoNodeCategory(name, name, items=items))
+
+    from nodeitems_utils import register_node_categories
+    register_node_categories('ZENO_SUBGRAPH_NODES', node_subgraph_categories)
+
+
+def deinit_node_subgraphs():
+    from nodeitems_utils import unregister_node_categories
+    unregister_node_categories('ZENO_SUBGRAPH_NODES')
+
+
 def register_node_class(Def):
     node_classes.append(Def)
     node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)
     return Def
-
-
-def deinit_node_categories():
-    from nodeitems_utils import unregister_node_categories
-    unregister_node_categories('ZENO_NODES')
 
 
 
@@ -242,17 +253,20 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    init_node_categories()
+    init_node_subgraphs()
 
 
 def unregister():
-    deinit_node_categories()
+    try: deinit_node_subgraphs()
+    except: pass
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):
         unregister_class(cls)
     for cls in reversed(node_classes):
         unregister_class(cls)
+
+    deinit_node_classes()
 
 
 if __name__ == "__main__":

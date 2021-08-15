@@ -36,6 +36,17 @@ def unregister():
     bpy.utils.unregister_class(ZenoApplyOperator)
 
 
+def find_tree_sub_category(tree):
+    if 'SubCategory' in tree.nodes:
+        node = tree.nodes['SubCategory']
+        if node.zeno_type == 'SubCategory':
+            return node.inputs['name:'].default_value
+    for node_name, node in tree.nodes.items():
+        if node.zeno_type == 'SubCategory':
+            return node.inputs['name:'].default_value
+    return 'uncategorized'
+
+
 def find_tree_sub_io_names(tree):
     inputs = []
     outputs = []

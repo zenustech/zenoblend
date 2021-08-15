@@ -67,12 +67,17 @@ def eval_category_icon(type):
         'blendermesh': 'MESH_DATA',
         'openvdb': 'FILE_VOLUME',
         'primitive': 'PARTICLES',
-        'subgraph': 'NODETREE',
+        'subgraph': 'SYSTEM',
+        'portal': 'RNA',
+        'control': 'SCRIPT',
         'Rigid': 'RIGID_BODY',
         'FLIPSolver': 'MATFLUID',
         'cloth': 'MATCLOTH',
         'string': 'FILE_FOLDER',
+        'numeric': 'PLUS',
+        'literial': 'DOT',
         'zenofx': 'PHYSICS',
+        'EasyGL': 'IMAGE',
     }
     return type_lut.get(type, 'NODETREE')
 
@@ -122,6 +127,7 @@ def def_node_class(name, inputs, outputs, category):
 
 class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
     '''Zeno specialized subgraph node'''
+    bl_icon = 'COMMUNITY'
 
     graph_name: bpy.props.StringProperty()
 

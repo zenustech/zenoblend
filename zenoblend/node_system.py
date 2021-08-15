@@ -35,9 +35,9 @@ class ZenoNodeSocket(NodeSocket):
         return (1.0, 0.4, 0.216, 1.0)
 
 
-class ZenoNodeSocketDummy(NodeSocket):
+class ZenoNodeSocket_Dummy(NodeSocket):
     '''Zeno node dummy socket type'''
-    bl_idname = 'ZenoNodeSocketDummy'
+    bl_idname = 'ZenoNodeSocket_Dummy'
     bl_label = "Zeno Node Socket Dummy"
 
     def draw(self, context, layout, node, text):
@@ -76,14 +76,17 @@ def eval_defl(defl, type):
 
 def def_node_class(name, inputs, outputs, category):
     class Def(Node, ZenoTreeNode):
-        bl_idname = 'ZenoNode_' + name
         bl_label = name
         bl_icon = 'NODETREE'
         zeno_type = name
+        zeno_category = category
 
         def init(self, context):
-            self.inputs.new('ZenoNodeSocketDummy', 'SRC')
-            self.outputs.new('ZenoNodeSocketDummy', 'DST')
+            self.init_sockets(inputs, outputs)
+
+        def init_sockets(self, inputs, outputs):
+            self.inputs.new('ZenoNodeSocket_Dummy', 'SRC')
+            self.outputs.new('ZenoNodeSocket_Dummy', 'DST')
 
             for type, name, defl in inputs:
                 type = eval_type(type)
@@ -97,45 +100,56 @@ def def_node_class(name, inputs, outputs, category):
                 type = eval_type(type)
                 self.outputs.new(type, name)
 
-        def reinit(self):
-            nonlocal inputs, outputs
-            if self.zeno_type == 'Subgraph':
-                tree_name = self.inputs['name:'].default_value
-                tree = bpy.data.node_groups[tree_name]
-                from .execute_operator import find_tree_sub_io_names
-                inputs, outputs = find_tree_sub_io_names(tree)
-
-            links = []
-            for name, socket in self.inputs.items():
-                for link in socket.links:
-                    links.append((
-                        link.from_node, link.from_socket.name,
-                        link.to_node, link.to_socket.name,
-                        ))
-                self.inputs.remove(socket)
-            for name, socket in self.outputs.items():
-                for link in socket.links:
-                    links.append((
-                        link.from_node, link.from_socket.name,
-                        link.to_node, link.to_socket.name,
-                        ))
-                self.outputs.remove(socket)
-
-            self.init(bpy.context)
-
-            node_tree = self.id_data
-            for from_node, from_socket, to_node, to_socket in links:
-                if from_socket not in from_node.outputs:
-                    continue
-                if to_socket not in to_node.inputs:
-                    continue
-                from_socket = from_node.outputs[from_socket]
-                to_socket = to_node.inputs[to_socket]
-                node_tree.links.new(from_socket, to_socket)
-
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
     return Def
+
+
+class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
+    '''Zeno specialized subgraph node'''
+
+    graph_name: bpy.props.StringProperty()
+
+    def init(self, context):
+        self.zeno_inputs, self.zeno_outputs = [], []
+        self.init_sockets(self.zeno_inputs, self.zeno_outputs)
+
+    def draw_label(self):
+        return self.graph_name
+
+    def reinit_sockets(self):
+        tree_name = self.graph_name
+        tree = bpy.data.node_groups[tree_name]
+        from .execute_operator import find_tree_sub_io_names
+        self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
+
+        links = []
+        for name, socket in self.inputs.items():
+            for link in socket.links:
+                links.append((
+                    link.from_node, link.from_socket.name,
+                    link.to_node, link.to_socket.name,
+                    ))
+            self.inputs.remove(socket)
+        for name, socket in self.outputs.items():
+            for link in socket.links:
+                links.append((
+                    link.from_node, link.from_socket.name,
+                    link.to_node, link.to_socket.name,
+                    ))
+            self.outputs.remove(socket)
+
+        self.init_sockets(self.zeno_inputs, self.zeno_outputs)
+
+        node_tree = self.id_data
+        for from_node, from_socket, to_node, to_socket in links:
+            if from_socket not in from_node.outputs:
+                continue
+            if to_socket not in to_node.inputs:
+                continue
+            from_socket = from_node.outputs[from_socket]
+            to_socket = to_node.inputs[to_socket]
+            node_tree.links.new(from_socket, to_socket)
 
 
 
@@ -177,27 +191,40 @@ def init_node_classes():
     for title, inputs, outputs, category in node_descriptors:
         register_node_class(def_node_class(title, inputs, outputs, category))
 
-    init_node_categories()
-
 
 def init_node_categories():
+    def make_node_item(n):
+        if isinstance(n, str):
+            return NodeItem(n)
+        return NodeItem("ZenoNodeSubgraph", label=graph_name,
+            settings={"graph_name": repr(graph_name)})
+
     node_categories.clear()
     for name, node_names in node_pre_categories.items():
-        items = [NodeItem(n) for n in node_names]
+        items = [make_node_item(n) for n in node_names]
         node_categories.append(ZenoNodeCategory(name, name, items=items))
+
+    from nodeitems_utils import register_node_categories
+    register_node_categories('ZENO_NODES', node_categories)
 
 
 def register_node_class(Def):
     node_classes.append(Def)
-    node_pre_categories.setdefault(category, []).append(Def.__name__)
+    node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)
     return Def
+
+
+def deinit_node_categories():
+    from nodeitems_utils import unregister_node_categories
+    unregister_node_categories('ZENO_NODES')
 
 
 
 classes = (
     ZenoNodeTree,
     ZenoNodeSocket,
-    ZenoNodeSocketDummy,
+    ZenoNodeSocket_Dummy,
+    ZenoNodeSubgraph,
 )
 
 
@@ -210,13 +237,11 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    from nodeitems_utils import register_node_categories
-    register_node_categories('ZENO_NODES', node_categories)
+    init_node_categories()
 
 
 def unregister():
-    from nodeitems_utils import unregister_node_categories
-    unregister_node_categories('ZENO_NODES')
+    deinit_node_categories()
 
     from bpy.utils import unregister_class
     for cls in reversed(classes):

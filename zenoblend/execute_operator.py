@@ -8,7 +8,12 @@ class ZenoApplyOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return 'NodeTree' in bpy.data.node_groups
+        main_name = 'NodeTree'
+        if main_name in bpy.data.node_groups:
+            tree = bpy.data.node_groups[main_name]
+            if tree.bl_idname == 'ZenoNodeTree':
+                return True
+        return False
 
     def execute(self, context):
         import json
@@ -31,18 +36,17 @@ class ZenoReloadSubgraphOperator(bpy.types.Operator):
 
     def execute(self, context):
         from .node_system import init_node_subgraphs, deinit_node_subgraphs
-        print('!!!')
         deinit_node_subgraphs()
         init_node_subgraphs()
-        #reinit_subgraph_sockets()
+        reinit_subgraph_sockets()
         return {'FINISHED'}
 
 
 def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
-        self.layout.operator("node.zeno_apply", text="Apply Zeno Graph")
-        self.layout.operator("node.zeno_reload_subgraph", text="Reload Zeno Subgraphs")
+        self.layout.operator("node.zeno_apply", text="Apply Graph")
+        self.layout.operator("node.zeno_reload_subgraph", text="Reload Subgraphs")
 
 
 classes = (
@@ -61,6 +65,14 @@ def unregister():
     bpy.types.NODE_MT_context_menu.remove(draw_menu)
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+
+def reinit_subgraph_sockets():
+    for tree_name, tree in bpy.data.node_groups.items():
+        if tree.bl_idname != 'ZenoNodeTree': continue
+        for node_name, node in tree.nodes.items():
+            if node.zeno_type == 'Subgraph':
+                node.reinit_sockets()
 
 
 def find_tree_sub_category(tree):
@@ -114,5 +126,6 @@ def dump_tree(tree):
 def dump_all_trees():
     yield ('clearAllState',)
     for name, tree in bpy.data.node_groups.items():
+        if tree.bl_idname != 'ZenoNodeTree': continue
         yield ('switchGraph', name)
         yield from dump_tree(tree)

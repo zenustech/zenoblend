@@ -68,6 +68,8 @@ def dump_tree(tree):
             elif hasattr(input, 'default_value'):
                 value = input.default_value
                 yield ('setNodeInput', node_name, input_name, value)
+        if node.zeno_type == 'Subgraph':
+            yield ('setNodeInput', node_name, 'name:', node.graph_name)
         yield ('completeNode', node_name)
 
 

@@ -112,14 +112,12 @@ class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
 
     def init(self, context):
         self.zeno_inputs, self.zeno_outputs = [], []
-        self.init_sockets(self.zeno_inputs, self.zeno_outputs)
 
     def draw_label(self):
         return self.graph_name
 
     def reinit_sockets(self):
-        tree_name = self.graph_name
-        tree = bpy.data.node_groups[tree_name]
+        tree = bpy.data.node_groups[self.graph_name]
         from .execute_operator import find_tree_sub_io_names
         self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
 
@@ -194,13 +192,20 @@ def init_node_classes():
 
 def init_node_categories():
     def make_node_item(n):
-        if isinstance(n, str):
+        if isinstance(n, tuple):
+            (graph_name,) = n
+            return NodeItem("ZenoNodeSubgraph", label=graph_name,
+                settings={"graph_name": repr(graph_name)})
+        else:
             return NodeItem(n)
-        return NodeItem("ZenoNodeSubgraph", label=graph_name,
-            settings={"graph_name": repr(graph_name)})
+
+    import copy
+    pre_categories = copy.deepcopy(node_pre_categories)
+
+    pre_categories.setdefault('mycate', []).append(('NodeTree.001',))
 
     node_categories.clear()
-    for name, node_names in node_pre_categories.items():
+    for name, node_names in pre_categories.items():
         items = [make_node_item(n) for n in node_names]
         node_categories.append(ZenoNodeCategory(name, name, items=items))
 

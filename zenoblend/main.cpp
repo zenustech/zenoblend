@@ -91,6 +91,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
     m.def("graphSetEndpointMesh", []
             ( uintptr_t graphPtr
             , std::string endpName
+            , std::array<std::array<float, 4>, 4> matrix
             , uintptr_t vertPtr
             , size_t vertCount
             , uintptr_t loopPtr
@@ -102,6 +103,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
         graph->setGraphEndpointGetter(endpName, [=] () -> zeno::any {
             auto mesh = std::make_shared<zeno::BlenderMesh>();
+            mesh->matrix = matrix;
             mesh->vert.resize(vertCount);
             auto vert = reinterpret_cast<MVert const *>(vertPtr);
             for (int i = 0; i < vertCount; i++) {
@@ -131,6 +133,14 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto mesh = zeno::smart_any_cast<std::shared_ptr<zeno::BlenderMesh>>(meshAny);
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;
+    });
+
+    m.def("meshGetMatrix", []
+            ( uintptr_t meshPtr
+            ) -> std::array<std::array<float, 4>, 4>
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        return mesh->matrix;
     });
 
     m.def("meshGetVerticesCount", []

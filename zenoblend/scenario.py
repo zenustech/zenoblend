@@ -71,14 +71,16 @@ def execute_scene():
         else:
             blenderObj = bpy.data.objects[inputName]
             blenderMesh = blenderObj.data
+        matrix = tuple(map(tuple, blenderObj.matrix_world))
         meshData = meshFromBlender(blenderMesh)
-        core.graphSetEndpointMesh(graphPtr, inputName, *meshData)
+        core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
 
     core.graphApply(graphPtr)
 
     outputNames = core.graphGetEndpointSetNames(graphPtr)
     for outputName in outputNames:
         outMeshPtr = core.graphGetEndpointSetMesh(graphPtr, outputName)
+        matrix = core.meshGetMatrix(outMeshPtr)
         if outputName not in bpy.data.objects:
             blenderMesh = bpy.data.meshes.new(outputName)
             blenderObj = bpy.data.objects.new(outputName, blenderMesh)
@@ -86,6 +88,8 @@ def execute_scene():
         else:
             blenderObj = bpy.data.objects[outputName]
             blenderMesh = blenderObj.data
+        if any(map(any, matrix)):
+            blenderObj.matrix_world = matrix
         meshToBlender(outMeshPtr, blenderMesh)
 
 

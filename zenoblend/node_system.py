@@ -105,9 +105,6 @@ def def_node_class(name, inputs, outputs, category):
             self.init_sockets(inputs, outputs)
 
         def init_sockets(self, inputs, outputs):
-            self.inputs.new('ZenoNodeSocket_Dummy', 'SRC')
-            self.outputs.new('ZenoNodeSocket_Dummy', 'DST')
-
             for type, name, defl in inputs:
                 type = eval_type(type)
                 socket = self.inputs.new(type, name)
@@ -119,6 +116,9 @@ def def_node_class(name, inputs, outputs, category):
             for type, name, defl in outputs:
                 type = eval_type(type)
                 self.outputs.new(type, name)
+
+            self.inputs.new('ZenoNodeSocket_Dummy', 'SRC')
+            self.outputs.new('ZenoNodeSocket_Dummy', 'DST')
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name

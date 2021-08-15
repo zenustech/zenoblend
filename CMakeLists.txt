@@ -31,7 +31,7 @@ set(EXTENSION_zenvdb ON CACHE BOOL "For Embeding Usage")
 set(EXTENSION_ZenoFX ON CACHE BOOL "For Embeding Usage")
 set(EXTENSION_oldzenbase OFF CACHE BOOL "For Embeding Usage")
 set(EXTENSION_FastFLIP OFF CACHE BOOL "For Embeding Usage")
-set(EXTENSION_Rigid OFF CACHE BOOL "For Embeding Usage")
+set(EXTENSION_Rigid ON CACHE BOOL "For Embeding Usage")
 set(ZENOFX_ENABLE_OPENVDB ON CACHE BOOL "For Embeding Usage")
 add_subdirectory(external/zeno)
 

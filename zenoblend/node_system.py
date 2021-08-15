@@ -116,6 +116,11 @@ class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
     def draw_label(self):
         return self.graph_name
 
+    #def draw_buttons(self, context, layout):
+        #row = layout.row()
+        #row.operator("node.zeno_reload_subgraph", text="Reload")
+        #row.operator("render.render", text="Goto")
+
     def reinit_sockets(self):
         tree = bpy.data.node_groups[self.graph_name]
         from .execute_operator import find_tree_sub_io_names
@@ -205,6 +210,10 @@ def deinit_node_classes():
 
 
 def init_node_subgraphs():
+    if getattr(init_node_subgraphs, 'initialized', False):
+        return
+    init_node_subgraphs.initialized = True
+
     def make_node_item(graph_name):
         return NodeItem("ZenoNodeSubgraph", label=graph_name,
             settings={"graph_name": repr(graph_name)})
@@ -225,6 +234,10 @@ def init_node_subgraphs():
 
 
 def deinit_node_subgraphs():
+    if not getattr(init_node_subgraphs, 'initialized', False):
+        return
+    init_node_subgraphs.initialized = False
+
     from nodeitems_utils import unregister_node_categories
     unregister_node_categories('ZENO_SUBGRAPH_NODES')
 
@@ -253,7 +266,7 @@ def register():
     for cls in classes:
         register_class(cls)
 
-    init_node_subgraphs()
+    #init_node_subgraphs()
 
 
 def unregister():

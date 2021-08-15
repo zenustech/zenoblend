@@ -20,20 +20,47 @@ class ZenoApplyOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ZenoReloadSubgraphOperator(bpy.types.Operator):
+    """Reload Zeno subgraph"""
+    bl_idname = "node.zeno_reload_subgraph"
+    bl_label = "Reload Subgraph"
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.tree_type == 'ZenoNodeTree'
+
+    def execute(self, context):
+        from .node_system import init_node_subgraphs, deinit_node_subgraphs
+        print('!!!')
+        deinit_node_subgraphs()
+        init_node_subgraphs()
+        #reinit_subgraph_sockets()
+        return {'FINISHED'}
+
+
 def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
         self.layout.operator("node.zeno_apply", text="Apply Zeno Graph")
+        self.layout.operator("node.zeno_reload_subgraph", text="Reload Zeno Subgraphs")
+
+
+classes = (
+    ZenoApplyOperator,
+    ZenoReloadSubgraphOperator,
+)
 
 
 def register():
-    bpy.utils.register_class(ZenoApplyOperator)
+    for cls in classes:
+        bpy.utils.register_class(cls)
     bpy.types.NODE_MT_context_menu.append(draw_menu)
 
 
 def unregister():
     bpy.types.NODE_MT_context_menu.remove(draw_menu)
-    bpy.utils.unregister_class(ZenoApplyOperator)
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
 
 
 def find_tree_sub_category(tree):

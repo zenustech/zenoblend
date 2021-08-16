@@ -75,7 +75,7 @@ def eval_category_icon(type):
         'cloth': 'MATCLOTH',
         'string': 'FILE_FOLDER',
         'numeric': 'PLUS',
-        'literial': 'DOT',
+        'literal': 'DOT',
         'zenofx': 'PHYSICS',
         'EasyGL': 'IMAGE',
     }

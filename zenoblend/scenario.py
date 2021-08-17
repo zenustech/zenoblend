@@ -3,7 +3,7 @@ import bpy
 from .dll import core
 
 # https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
-def _prepare_mesh(obj, depsgraph, no_modifiers=False):
+def _prepare_mesh(obj, depsgraph, no_modifiers=True):
     """
     Create a temporary mesh from an object.
     The mesh is guaranteed to be removed when the calling block ends.
@@ -47,6 +47,9 @@ def _prepare_mesh(obj, depsgraph, no_modifiers=False):
 
             if mesh.has_custom_normals:
                 mesh.calc_normals_split()
+
+    if not mesh:
+        return obj.data, lambda: None
 
     def callback():
         if object_eval and mesh:

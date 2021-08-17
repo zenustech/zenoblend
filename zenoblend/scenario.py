@@ -3,7 +3,7 @@ import bpy
 from .dll import core
 
 # https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
-def _prepare_mesh(obj, depsgraph, no_modifiers=True):
+def _prepare_mesh(obj, depsgraph, no_modifiers=False):
     """
     Create a temporary mesh from an object.
     The mesh is guaranteed to be removed when the calling block ends.
@@ -113,9 +113,13 @@ def delete_scene():
     if sceneId is not None:
         core.deleteScene(sceneId)
     sceneId = None
+    frameCache.clear()
 
 
 def execute_scene():
+    currFrameId = bpy.context.scene.frame_current
+    currFrameCache = frameCache.setdefault(currFrameId, {})
+
     depsgraph = bpy.context.evaluated_depsgraph_get()
 
     core.sceneSwitchToGraph(sceneId, 'NodeTree')
@@ -147,24 +151,40 @@ def execute_scene():
             bpy.context.collection.objects.link(blenderObj)
         else:
             blenderObj = bpy.data.objects[outputName]
-            blenderMesh = blenderObj.data
+            blenderMesh = bpy.data.meshes.new(outputName)
+            blenderObj.data = blenderMesh
         if any(map(any, matrix)):
             blenderObj.matrix_world = matrix
+        currFrameCache[blenderObj.name] = blenderMesh.name
         meshToBlender(outMeshPtr, blenderMesh)
 
     for cb in prepareCallbacks:
         cb()
 
 
+frameCache = {}
+
+
 def update_scene():
     if sceneId is None:
         return
+
     global lastFrameId
     currFrameId = bpy.context.scene.frame_current
     if lastFrameId is None or currFrameId == lastFrameId + 1:
         print('executing frame:', currFrameId)
         execute_scene()
         lastFrameId = currFrameId
+
+    if currFrameId not in frameCache:
+        return
+    for objName, meshName in frameCache[currFrameId].items():
+        if objName not in bpy.data.objects:
+            continue
+        blenderObj = bpy.data.objects[objName]
+        blenderMesh = bpy.data.objects[meshName]
+        if blenderObj.data is not blenderMesh:
+            blenderObj.data = blenderMesh
 
 
 @bpy.app.handlers.persistent

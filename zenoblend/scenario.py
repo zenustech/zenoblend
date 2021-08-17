@@ -2,6 +2,58 @@ import bpy
 
 from .dll import core
 
+# https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
+def _prepare_mesh(obj, depsgraph, no_modifiers=False):
+    """
+    Create a temporary mesh from an object.
+    The mesh is guaranteed to be removed when the calling block ends.
+    Can return None if no mesh could be created from the object (e.g. for empties)
+    Use it like this:
+    with mesh_converter.convert(obj, depsgraph) as mesh:
+        if mesh:
+            print(mesh.name)
+            ...
+    """
+
+    if no_modifiers:
+        return obj.data, lambda: None
+
+    mesh = None
+    object_eval = None
+
+    object_eval = obj.evaluated_get(depsgraph)
+    if object_eval:
+        mesh = object_eval.to_mesh()
+
+        if mesh:
+            # TODO test if this makes sense
+            # If negative scaling, we have to invert the normals
+            # if not mesh.has_custom_normals and object_eval.matrix_world.determinant() < 0.0:
+            #     # Does not handle custom normals
+            #     mesh.flip_normals()
+
+            mesh.calc_loop_triangles()
+            if not mesh.loop_triangles:
+                object_eval.to_mesh_clear()
+                mesh = None
+
+        if mesh:
+            if mesh.use_auto_smooth:
+                if not mesh.has_custom_normals:
+                    mesh.calc_normals()
+                mesh.split_faces()
+
+            mesh.calc_loop_triangles()
+
+            if mesh.has_custom_normals:
+                mesh.calc_normals_split()
+
+    def callback():
+        if object_eval and mesh:
+            object_eval.to_mesh_clear()
+
+    return mesh, callback
+
 
 def meshFromBlender(mesh):
     vertCount = len(mesh.vertices)
@@ -64,6 +116,7 @@ def execute_scene():
     core.sceneSwitchToGraph(sceneId, 'NodeTree')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
+    prepareCallbacks = []
     inputNames = core.graphGetEndpointNames(graphPtr)
     for inputName in inputNames:
         if inputName not in bpy.data.objects:
@@ -72,7 +125,10 @@ def execute_scene():
             blenderObj = bpy.data.objects[inputName]
             blenderMesh = blenderObj.data
         matrix = tuple(map(tuple, blenderObj.matrix_world))
-        meshData = meshFromBlender(blenderMesh)
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
+        prepareCallbacks.append(prepareCallback)
+        meshData = meshFromBlender(preparedMesh)
         core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
 
     core.graphApply(graphPtr)
@@ -91,6 +147,9 @@ def execute_scene():
         if any(map(any, matrix)):
             blenderObj.matrix_world = matrix
         meshToBlender(outMeshPtr, blenderMesh)
+
+    for cb in prepareCallbacks:
+        cb()
 
 
 def update_scene():

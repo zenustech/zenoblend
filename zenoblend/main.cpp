@@ -101,7 +101,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        graph->setGraphEndpointGetter(endpName, [=] () -> zeno::any {
+        graph->setGraphEndpointGetter(endpName, [=] () -> zeno::zany {
             auto mesh = std::make_shared<zeno::BlenderMesh>();
             mesh->matrix = matrix;
             mesh->vert.resize(vertCount);

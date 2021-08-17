@@ -184,6 +184,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto poly = reinterpret_cast<MPoly *>(polyPtr);
         for (int i = 0; i < polyCount; i++) {
             std::tie(poly[i].loopstart, poly[i].totloop) = mesh->poly[i];
+            if (mesh->is_smooth)
+                poly[i].flag |= ME_SMOOTH;
         }
     });
 

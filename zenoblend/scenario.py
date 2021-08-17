@@ -113,6 +113,8 @@ def delete_scene():
 
 
 def execute_scene():
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+
     core.sceneSwitchToGraph(sceneId, 'NodeTree')
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
@@ -125,7 +127,6 @@ def execute_scene():
             blenderObj = bpy.data.objects[inputName]
             blenderMesh = blenderObj.data
         matrix = tuple(map(tuple, blenderObj.matrix_world))
-        depsgraph = bpy.context.evaluated_depsgraph_get()
         preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
         prepareCallbacks.append(prepareCallback)
         meshData = meshFromBlender(preparedMesh)

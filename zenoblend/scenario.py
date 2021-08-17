@@ -151,11 +151,12 @@ def execute_scene():
             bpy.context.collection.objects.link(blenderObj)
         else:
             blenderObj = bpy.data.objects[outputName]
-            blenderMesh = bpy.data.meshes.new(outputName)
-            blenderObj.data = blenderMesh
+            blenderMesh = blenderObj.data.copy()
+            #blenderMesh = bpy.data.meshes.new(outputName)
+            #blenderMesh = blenderObj.data
         if any(map(any, matrix)):
             blenderObj.matrix_world = matrix
-        currFrameCache[blenderObj.name] = blenderMesh.name
+        #currFrameCache[blenderObj.name] = blenderMesh.name
         meshToBlender(outMeshPtr, blenderMesh)
 
     for cb in prepareCallbacks:
@@ -181,8 +182,10 @@ def update_scene():
     for objName, meshName in frameCache[currFrameId].items():
         if objName not in bpy.data.objects:
             continue
+        if meshName not in bpy.data.meshes:
+            continue
         blenderObj = bpy.data.objects[objName]
-        blenderMesh = bpy.data.objects[meshName]
+        blenderMesh = bpy.data.meshes[meshName]
         if blenderObj.data is not blenderMesh:
             blenderObj.data = blenderMesh
 

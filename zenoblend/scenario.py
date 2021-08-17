@@ -96,7 +96,7 @@ def meshToBlender(meshPtr, mesh):
 
 
 sceneId = None
-lastFrameId = None
+nextFrameId = None
 
 
 def load_scene(jsonStr):
@@ -108,8 +108,8 @@ def load_scene(jsonStr):
 
 def delete_scene():
     global sceneId
-    global lastFrameId
-    lastFrameId = None
+    global nextFrameId
+    nextFrameId = None
     if sceneId is not None:
         core.deleteScene(sceneId)
     sceneId = None
@@ -151,12 +151,14 @@ def execute_scene():
             bpy.context.collection.objects.link(blenderObj)
         else:
             blenderObj = bpy.data.objects[outputName]
+            # todo: only need to copy the material actually:
             blenderMesh = blenderObj.data.copy()
             #blenderMesh = bpy.data.meshes.new(outputName)
             #blenderMesh = blenderObj.data
+            blenderObj.data = blenderMesh
         if any(map(any, matrix)):
             blenderObj.matrix_world = matrix
-        #currFrameCache[blenderObj.name] = blenderMesh.name
+        currFrameCache[blenderObj.name] = blenderMesh.name
         meshToBlender(outMeshPtr, blenderMesh)
 
     for cb in prepareCallbacks:
@@ -170,12 +172,17 @@ def update_scene():
     if sceneId is None:
         return
 
-    global lastFrameId
+    global nextFrameId
     currFrameId = bpy.context.scene.frame_current
-    if lastFrameId is None or currFrameId == lastFrameId + 1:
+    if nextFrameId is None:
+        #nextFrameId = currFrameId
+        nextFrameId = bpy.context.scene.frame_start
+    if currFrameId > bpy.context.scene.frame_end:
+        return
+    if currFrameId == nextFrameId:
         print('executing frame:', currFrameId)
         execute_scene()
-        lastFrameId = currFrameId
+        nextFrameId = currFrameId + 1
 
     if currFrameId not in frameCache:
         return

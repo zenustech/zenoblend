@@ -1,6 +1,6 @@
-# ZENO Addon Wizard
+# ZENO Blender Plugin
 
-Demo project showing on how to add custom nodes to ZENO.
+Integrate ZENO node system into Blender!
 
 # Setup
 
@@ -34,14 +34,3 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 ```bash
 ./run.py
 ```
-
-Then open `graphs/MyPrimitiveOps.zsg` and click `Run`.
-
-# Coding
-
-The `YourProject/` is a demo project for showing how to add custom nodes in ZENO with its C++ API.
-
-See [MyPrimitiveOps.cpp](YourProject/MyPrimitiveOps.cpp) for custom primitive operation.
-See [CustomNumber.cpp](YourProject/CustomNumber.cpp) for defining custom object.
-
-Let me know if you need more demos here by opening an [issue](https://github.com/zenustech/zeno_addon_wizard/issues).

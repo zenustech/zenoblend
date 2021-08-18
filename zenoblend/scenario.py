@@ -1,4 +1,5 @@
 import bpy
+import time
 
 from .dll import core
 
@@ -117,8 +118,9 @@ def delete_scene():
 
 
 def execute_scene(graph_name, is_framed):
-    currFrameId = bpy.context.scene.frame_current
-    currFrameCache = frameCache.setdefault(currFrameId, {})
+    if is_framed:
+        currFrameId = bpy.context.scene.frame_current
+        currFrameCache = frameCache.setdefault(currFrameId, {})
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
 
@@ -154,13 +156,13 @@ def execute_scene(graph_name, is_framed):
             if is_framed:
                 # todo: only need to copy the material actually:
                 blenderMesh = blenderObj.data.copy()
-                #blenderMesh = bpy.data.meshes.new(outputName)
                 blenderObj.data = blenderMesh
             else:
                 blenderMesh = blenderObj.data
         if any(map(any, matrix)):
             blenderObj.matrix_world = matrix
-        currFrameCache[blenderObj.name] = blenderMesh.name
+        if is_framed:
+            currFrameCache[blenderObj.name] = blenderMesh.name
         meshToBlender(outMeshPtr, blenderMesh)
 
     for cb in prepareCallbacks:
@@ -181,7 +183,7 @@ def update_frame():
     if currFrameId > bpy.context.scene.frame_end:
         return
     if currFrameId == nextFrameId:
-        print('executing frame:', currFrameId)
+        print(time.strftime('%H:%M:%S'), 'executing frame:', currFrameId)
         execute_scene('NodeTree', is_framed=True)
         nextFrameId = currFrameId + 1
 
@@ -202,30 +204,41 @@ def update_scene():
     if sceneId is None:
         return
 
-    print('updating scene')
-    execute_scene('NodeTreeGeo', is_framed=True)
+    currFrameId = bpy.context.scene.frame_current
+    print(time.strftime('%H:%M:%S'), 'updating scene:', currFrameId)
+    execute_scene('NodeTreeGeo', is_framed=False)
 
 
 @bpy.app.handlers.persistent
 def frame_update_callback(*unused):
-    pass#update_frame()
+    global sceneUpdateEntered
+    try:
+        sceneUpdateEntered = True
+        update_scene()
+        update_frame()
+    finally:
+        sceneUpdateEntered = False
+
+
+sceneUpdateEntered = False
 
 
 @bpy.app.handlers.persistent
 def scene_update_callback(*unused):
-    update_scene()
+    if not sceneUpdateEntered:
+        update_scene()
 
 
 def register():
     if frame_update_callback not in bpy.app.handlers.frame_change_pre:
         bpy.app.handlers.frame_change_pre.append(frame_update_callback)
-    if scene_update_callback not in bpy.app.handlers.depsgraph_update_pre:
-        bpy.app.handlers.depsgraph_update_pre.append(frame_update_callback)
+    if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
 
 
 def unregister():
     delete_scene()
     if frame_update_callback in bpy.app.handlers.frame_change_pre:
         bpy.app.handlers.frame_change_pre.remove(frame_update_callback)
-    if scene_update_callback in bpy.app.handlers.depsgraph_update_pre:
-        bpy.app.handlers.depsgraph_update_pre.remove(scene_update_callback)
+    if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)

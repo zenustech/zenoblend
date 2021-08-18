@@ -8,12 +8,7 @@ class ZenoApplyOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        main_name = 'NodeTree'
-        if main_name in bpy.data.node_groups:
-            tree = bpy.data.node_groups[main_name]
-            if tree.bl_idname == 'ZenoNodeTree':
-                return True
-        return False
+        return context.space_data.tree_type == 'ZenoNodeTree'
 
     def execute(self, context):
         import json

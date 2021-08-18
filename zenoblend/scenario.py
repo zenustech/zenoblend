@@ -117,12 +117,16 @@ def reload_scene():  # todo: have an option to turn off this
     jsonStr = dump_scene()
     if lastJsonStr == jsonStr:
         return
+    print(time.strftime('[%H:%M:%S]'), 'reload_scene')
+    t0 = time.time()
     load_scene(jsonStr)
+    print('reload_scene spent', '{:.4f}s'.format(time.time() - t0))
 
 
 def delete_scene():
     global sceneId
     global nextFrameId
+    print(time.strftime('[%H:%M:%S]'), 'delete_scene')
     nextFrameId = None
     if sceneId is not None:
         core.deleteScene(sceneId)

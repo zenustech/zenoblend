@@ -29,7 +29,7 @@ class ZenoStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         from . import scenario
-        scenario.delete_scene(data)
+        scenario.delete_scene()
         return {'FINISHED'}
 
 

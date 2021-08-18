@@ -180,8 +180,10 @@ def update_frame():
     if currFrameId > bpy.context.scene.frame_end:
         return
     if currFrameId == nextFrameId:
-        print(time.strftime('%H:%M:%S'), 'executing frame:', currFrameId)
+        print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)
+        t0 = time.time()
         execute_scene('NodeTreeFramed', is_framed=True)
+        print('update_frame spent', '{:.4f}'.format(time.time() - t0))
         nextFrameId = currFrameId + 1
 
     if currFrameId not in frameCache:
@@ -199,8 +201,10 @@ def update_frame():
 
 def update_scene():
     currFrameId = bpy.context.scene.frame_current
-    print(time.strftime('%H:%M:%S'), 'updating scene:', currFrameId)
+    print(time.strftime('[%H:%M:%S]'), 'update_scene')
+    t0 = time.time()
     execute_scene('NodeTree', is_framed=False)
+    print('update_scene spent', '{:.4f}'.format(time.time() - t0))
 
 
 @bpy.app.handlers.persistent

@@ -5,4 +5,4 @@ __pycache__/
 *.pyd
 *.dll
 *.dylib
-/zenoblend/ZenoBin/
+/zenoblend/bin/

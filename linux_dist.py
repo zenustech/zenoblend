@@ -153,7 +153,7 @@ def fix_missing_libs(src_dir, dst_dir):
 
 
 with tempfile.TemporaryDirectory() as tmpdir:
-    fix_missing_libs('zenoblend/bin', tmpdir])
+    fix_missing_libs('zenoblend/bin', tmpdir)
     for fname in os.listdir(tmpdir):
         dstpath = os.path.join(tmpdir, fname)
         print('patching', dstpath)

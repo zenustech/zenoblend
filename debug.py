@@ -1,3 +1,5 @@
+#!/usr/bin/blender -P
+
 import os, sys
 
 repo_path = os.path.dirname(os.path.abspath(__file__))

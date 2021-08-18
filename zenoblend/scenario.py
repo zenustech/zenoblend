@@ -110,6 +110,16 @@ def load_scene(jsonStr):
     core.sceneLoadFromJson(sceneId, jsonStr)
 
 
+def reload_scene():  # todo: have an option to turn off this
+    global sceneId
+    global lastJsonStr
+    from .execute_operator import dump_scene
+    jsonStr = dump_scene()
+    if lastJsonStr == jsonStr:
+        return
+    load_scene(jsonStr)
+
+
 def delete_scene():
     global sceneId
     global nextFrameId
@@ -126,6 +136,7 @@ def graph_deal_input(graphPtr, inputName):
     blenderObj = bpy.data.objects[inputName]
     blenderMesh = blenderObj.data
     matrix = tuple(map(tuple, blenderObj.matrix_world))
+    depsgraph = bpy.context.evaluated_depsgraph_get()
     preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
     meshData = meshFromBlender(preparedMesh)
     core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
@@ -159,15 +170,13 @@ def execute_scene(graph_name, is_framed):
         currFrameId = bpy.context.scene.frame_current
         currFrameCache = frameCache.setdefault(currFrameId, {})
 
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
     prepareCallbacks = []
     inputNames = core.graphGetEndpointNames(graphPtr)
     for inputName in inputNames:
-        cb = graph_deal_input(graphPtr, inputName, blenderObj)
+        cb = graph_deal_input(graphPtr, inputName)
         prepareCallbacks.append(cb)
 
     core.graphApply(graphPtr)
@@ -210,7 +219,7 @@ def update_frame():
             blenderObj.data = blenderMesh
 
 
-def _update_scene():
+def update_scene():
     currFrameId = bpy.context.scene.frame_current
     print(time.strftime('[%H:%M:%S]'), 'update_scene')
     t0 = time.time()
@@ -226,6 +235,7 @@ def frame_update_callback(*unused):
     global nowUpdating
     try:
         nowUpdating = True
+        reload_scene()
         update_scene()
         update_frame()
     finally:
@@ -244,6 +254,7 @@ def scene_update_callback(*unused):
     if not nowUpdating:
         try:
             nowUpdating = True
+            reload_scene()
             update_scene()
         finally:
             nowUpdating = False

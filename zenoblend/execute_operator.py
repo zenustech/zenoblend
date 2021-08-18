@@ -11,10 +11,8 @@ class ZenoApplyOperator(bpy.types.Operator):
         return context.space_data.tree_type == 'ZenoNodeTree'
 
     def execute(self, context):
-        import json
         from . import scenario
-        data = list(dump_all_trees())
-        data = json.dumps(data)
+        data = dump_scene()
         scenario.load_scene(data)
         scenario.frame_update_callback()
         return {'FINISHED'}
@@ -141,3 +139,10 @@ def dump_all_trees():
         if tree.bl_idname != 'ZenoNodeTree': continue
         yield ('switchGraph', name)
         yield from dump_tree(tree)
+
+
+def dump_scene():
+    import json
+    data = list(dump_all_trees())
+    data = json.dumps(data)
+    return data

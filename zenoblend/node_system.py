@@ -67,6 +67,7 @@ def eval_category_icon(type):
         'blendermesh': 'MESH_DATA',
         'openvdb': 'FILE_VOLUME',
         'primitive': 'PARTICLES',
+        'trimesh': 'MESH_MONKEY',
         'subgraph': 'SYSTEM',
         'portal': 'RNA',
         'control': 'SCRIPT',

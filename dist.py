@@ -23,8 +23,21 @@ if os_name == 'linux':
     print('==> copying linux shared libraries')
     subprocess.check_call([sys.executable, 'scripts/linux_dist.py'])
 
+print('==> creating packaging directory')
 if not os.path.exists('dist'):
     os.mkdir('dist')
+
+shutil.copytree('zenoblend', 'dist/zenoblend')
+
+print('==> appending version informations')
+with open('dist/zenoblend/__init__.py', 'r') as f:
+    content = f.read()
+
+content = content.replace("'version': (0, 0, 0)",
+        "'version': ({}, {}, {})".format(*version.split('.')))
+
+with open('dist/zenoblend/__init__.py', 'w') as f:
+    f.write(content)
 
 zipname = 'dist/zenoblend-{}-{}'.format(os_name, version)
 print('==> creating zip archive at {}'.format(zipname))

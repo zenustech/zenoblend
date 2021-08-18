@@ -9,7 +9,7 @@ bl_info = {
         'name': 'Zeno-Blend',
         'description': 'Blender intergration of the Zeno node system',
         'author': 'archibate <1931127624@qq.com>',
-        'version': (0, 0, 1),
+        'version': (0, 0, 0),
         'blender': (2, 83, 0),
         'location': 'Zeno Node Tree',
         'support': 'COMMUNITY',

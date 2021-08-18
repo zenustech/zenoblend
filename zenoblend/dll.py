@@ -6,13 +6,13 @@ def relative_path(*args):
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), *args)
 
 if os_name == 'win32':  # windows doesn't support rpath, let's mock him only
-    lib_dir = relative_path('..', 'ZenoBin')
+    lib_dir = relative_path('ZenoBin')
     os.environ['PATH'] += os.pathsep + lib_dir
     if sys.version_info >= (3, 8):
         os.add_dll_directory(lib_dir)
     del lib_dir
 
-from ZenoBin import pylib_zenoblend as core
+from .ZenoBin import pylib_zenoblend as core
 
 def loadAutoloads(lib_dir):
     #print('loading addons from', lib_dir)
@@ -56,7 +56,6 @@ def loadAutoloads(lib_dir):
                 print('[  OK  ] [{}]'.format(path))
 
 if not os.environ.get('ZEN_NOAUTOLOAD'):
-    loadAutoloads(relative_path('..', 'ZenoBin'))
-    loadAutoloads(relative_path('..'))
+    loadAutoloads(relative_path('ZenoBin'))
 
 __all__ = ['core']

@@ -6,14 +6,6 @@ import time
 import shutil
 import subprocess
 
-def treefiles(dir):
-    if not os.path.isdir(dir):
-        yield dir
-    else:
-        for name in os.listdir(dir):
-            path = os.path.join(dir, name)
-            yield from treefiles(path)
-
 if sys.platform == 'win32':
     os_name = 'windows'
 elif sys.platform == 'linux':

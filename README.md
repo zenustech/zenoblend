@@ -1,6 +1,6 @@
 # ZENO Blender Plugin
 
-Integrate ZENO node system into Blender!
+Integrate ZENO node system into Blender for creating robust physics animations!
 
 # Setup
 
@@ -10,16 +10,16 @@ git submodule update --init --recursive
 ```
 To fetch ZENO which is included a submodule.
 
-## Build
+## Developer Build
 
-- Linux
+### Linux
 
 ```bash
 cmake -B build
 cmake --build build --parallel
 ```
 
-- Windows
+### Windows
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -31,6 +31,8 @@ IMPORTANT: In MSVC, Release mode must **always be active** when building ZENO, s
 
 ## Run
 
+### Linux
+
 ```bash
-./run.py
+./debug.py
 ```

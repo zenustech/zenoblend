@@ -13,8 +13,8 @@ bl_info = {
         'blender': (2, 83, 0),
         'location': 'Zeno Node Tree',
         'support': 'COMMUNITY',
-        'wiki_url': 'https://github.com/zenustech/zeno/wiki',
-        'tracker_url': 'https://github.com/zenustech/zeno/issues',
+        'wiki_url': 'https://github.com/zenustech/zenoblend/wiki',
+        'tracker_url': 'https://github.com/zenustech/zenoblend/issues',
         'category': 'Physics',
 }
 

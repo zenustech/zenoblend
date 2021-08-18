@@ -173,9 +173,6 @@ frameCache = {}
 
 
 def update_frame():
-    if sceneId is None:
-        return
-
     global nextFrameId
     currFrameId = bpy.context.scene.frame_current
     if nextFrameId is None:
@@ -201,9 +198,6 @@ def update_frame():
 
 
 def update_scene():
-    if sceneId is None:
-        return
-
     currFrameId = bpy.context.scene.frame_current
     print(time.strftime('%H:%M:%S'), 'updating scene:', currFrameId)
     execute_scene('NodeTree', is_framed=False)
@@ -211,6 +205,9 @@ def update_scene():
 
 @bpy.app.handlers.persistent
 def frame_update_callback(*unused):
+    if sceneId is None:
+        return
+
     global nowUpdating
     try:
         nowUpdating = True
@@ -225,6 +222,9 @@ nowUpdating = False
 
 @bpy.app.handlers.persistent
 def scene_update_callback(*unused):
+    if sceneId is None:
+        return
+
     global nowUpdating
     if not nowUpdating:
         try:

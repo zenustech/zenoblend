@@ -24,8 +24,8 @@ if os_name == 'linux':
     subprocess.check_call([sys.executable, 'scripts/linux_dist.py'])
 
 print('==> creating packaging directory')
-if not os.path.exists('dist'):
-    os.mkdir('dist')
+shutil.rmtree('dist', ignore_errors=True)
+os.mkdir('dist')
 
 shutil.copytree('zenoblend', 'dist/zenoblend')
 
@@ -41,5 +41,5 @@ with open('dist/zenoblend/__init__.py', 'w') as f:
 
 zipname = 'dist/zenoblend-{}-{}'.format(os_name, version)
 print('==> creating zip archive at {}'.format(zipname))
-shutil.make_archive(zipname, 'zip', 'zenoblend', verbose=1)
+shutil.make_archive(zipname, 'zip', 'dist', verbose=1)
 print('==> done with zip archive {}.zip'.format(zipname))

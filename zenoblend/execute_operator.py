@@ -16,7 +16,7 @@ class ZenoApplyOperator(bpy.types.Operator):
         data = list(dump_all_trees())
         data = json.dumps(data)
         scenario.load_scene(data)
-        scenario.update_scene()
+        scenario.frame_update_callback()
         return {'FINISHED'}
 
 

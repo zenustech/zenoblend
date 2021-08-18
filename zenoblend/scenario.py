@@ -120,6 +120,40 @@ def delete_scene():
     frameCache.clear()
 
 
+def graph_deal_input(graphPtr, inputName):
+    if inputName not in bpy.data.objects:
+        raise RuntimeError('No object named `{}` in scene'.format(inputName))
+    blenderObj = bpy.data.objects[inputName]
+    blenderMesh = blenderObj.data
+    matrix = tuple(map(tuple, blenderObj.matrix_world))
+    preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
+    meshData = meshFromBlender(preparedMesh)
+    core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
+    return prepareCallback
+
+
+def graph_deal_output(graphPtr, outputName, is_framed):
+    outMeshPtr = core.graphGetEndpointSetMesh(graphPtr, outputName)
+    matrix = core.meshGetMatrix(outMeshPtr)
+    if outputName not in bpy.data.objects:
+        blenderMesh = bpy.data.meshes.new(outputName)
+        blenderObj = bpy.data.objects.new(outputName, blenderMesh)
+        bpy.context.collection.objects.link(blenderObj)
+    else:
+        blenderObj = bpy.data.objects[outputName]
+        if is_framed:
+            # todo: only need to copy the material actually:
+            blenderMesh = blenderObj.data.copy()
+            blenderObj.data = blenderMesh
+        else:
+            blenderMesh = blenderObj.data
+    if any(map(any, matrix)):
+        blenderObj.matrix_world = matrix
+    if is_framed:
+        currFrameCache[blenderObj.name] = blenderMesh.name
+    meshToBlender(outMeshPtr, blenderMesh)
+
+
 def execute_scene(graph_name, is_framed):
     if is_framed:
         currFrameId = bpy.context.scene.frame_current
@@ -133,40 +167,14 @@ def execute_scene(graph_name, is_framed):
     prepareCallbacks = []
     inputNames = core.graphGetEndpointNames(graphPtr)
     for inputName in inputNames:
-        if inputName not in bpy.data.objects:
-            raise RuntimeError('No object named `{}` in scene'.format(inputName))
-        else:
-            blenderObj = bpy.data.objects[inputName]
-            blenderMesh = blenderObj.data
-        matrix = tuple(map(tuple, blenderObj.matrix_world))
-        preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
-        prepareCallbacks.append(prepareCallback)
-        meshData = meshFromBlender(preparedMesh)
-        core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
+        cb = graph_deal_input(graphPtr, inputName, blenderObj)
+        prepareCallbacks.append(cb)
 
     core.graphApply(graphPtr)
 
     outputNames = core.graphGetEndpointSetNames(graphPtr)
     for outputName in outputNames:
-        outMeshPtr = core.graphGetEndpointSetMesh(graphPtr, outputName)
-        matrix = core.meshGetMatrix(outMeshPtr)
-        if outputName not in bpy.data.objects:
-            blenderMesh = bpy.data.meshes.new(outputName)
-            blenderObj = bpy.data.objects.new(outputName, blenderMesh)
-            bpy.context.collection.objects.link(blenderObj)
-        else:
-            blenderObj = bpy.data.objects[outputName]
-            if is_framed:
-                # todo: only need to copy the material actually:
-                blenderMesh = blenderObj.data.copy()
-                blenderObj.data = blenderMesh
-            else:
-                blenderMesh = blenderObj.data
-        if any(map(any, matrix)):
-            blenderObj.matrix_world = matrix
-        if is_framed:
-            currFrameCache[blenderObj.name] = blenderMesh.name
-        meshToBlender(outMeshPtr, blenderMesh)
+        graph_deal_output(graphPtr, outputName, is_framed)
 
     for cb in prepareCallbacks:
         cb()

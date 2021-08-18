@@ -202,12 +202,21 @@ def frame_update_callback(*unused):
     update_scene()
 
 
+@bpy.app.handlers.persistent
+def scene_update_callback(*unused):
+    update_scene()
+
+
 def register():
     if frame_update_callback not in bpy.app.handlers.frame_change_pre:
         bpy.app.handlers.frame_change_pre.append(frame_update_callback)
+    if scene_update_callback not in bpy.app.handlers.depsgraph_update_pre:
+        bpy.app.handlers.depsgraph_update_pre.append(frame_update_callback)
 
 
 def unregister():
     delete_scene()
     if frame_update_callback in bpy.app.handlers.frame_change_pre:
         bpy.app.handlers.frame_change_pre.remove(frame_update_callback)
+    if scene_update_callback in bpy.app.handlers.depsgraph_update_pre:
+        bpy.app.handlers.depsgraph_update_pre.remove(scene_update_callback)

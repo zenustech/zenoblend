@@ -98,11 +98,14 @@ def meshToBlender(meshPtr, mesh):
 
 sceneId = None
 nextFrameId = None
+lastJsonStr = None
 
 
 def load_scene(jsonStr):
     global sceneId
+    global lastJsonStr
     delete_scene()
+    lastJsonStr = jsonStr
     sceneId = core.createScene()
     core.sceneLoadFromJson(sceneId, jsonStr)
 
@@ -183,7 +186,7 @@ def update_frame():
         print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)
         t0 = time.time()
         execute_scene('NodeTreeFramed', is_framed=True)
-        print('update_frame spent', '{:.4f}'.format(time.time() - t0))
+        print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
         nextFrameId = currFrameId + 1
 
     if currFrameId not in frameCache:
@@ -199,12 +202,12 @@ def update_frame():
             blenderObj.data = blenderMesh
 
 
-def update_scene():
+def _update_scene():
     currFrameId = bpy.context.scene.frame_current
     print(time.strftime('[%H:%M:%S]'), 'update_scene')
     t0 = time.time()
     execute_scene('NodeTree', is_framed=False)
-    print('update_scene spent', '{:.4f}'.format(time.time() - t0))
+    print('update_scene spent', '{:.4f}s'.format(time.time() - t0))
 
 
 @bpy.app.handlers.persistent

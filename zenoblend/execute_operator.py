@@ -20,8 +20,23 @@ class ZenoApplyOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class ZenoStopOperator(bpy.types.Operator):
+    """Stop the running Zeno graph"""
+    bl_idname = "node.zeno_stop"
+    bl_label = "Stop"
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.tree_type == 'ZenoNodeTree'
+
+    def execute(self, context):
+        from . import scenario
+        scenario.delete_scene(data)
+        return {'FINISHED'}
+
+
 class ZenoReloadSubgraphOperator(bpy.types.Operator):
-    """Reload Zeno subgraph"""
+    """Reload Zeno subgraphs"""
     bl_idname = "node.zeno_reload_subgraph"
     bl_label = "Reload Subgraph"
 
@@ -41,11 +56,13 @@ def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
         self.layout.operator("node.zeno_apply", text="Apply Graph")
+        self.layout.operator("node.zeno_stop", text="Stop Running Graph")
         self.layout.operator("node.zeno_reload_subgraph", text="Reload Subgraphs")
 
 
 classes = (
     ZenoApplyOperator,
+    ZenoStopOperator,
     ZenoReloadSubgraphOperator,
 )
 

@@ -184,7 +184,7 @@ def update_frame():
         return
     if currFrameId == nextFrameId:
         print(time.strftime('%H:%M:%S'), 'executing frame:', currFrameId)
-        execute_scene('NodeTree', is_framed=True)
+        execute_scene('NodeTreeFramed', is_framed=True)
         nextFrameId = currFrameId + 1
 
     if currFrameId not in frameCache:
@@ -206,7 +206,7 @@ def update_scene():
 
     currFrameId = bpy.context.scene.frame_current
     print(time.strftime('%H:%M:%S'), 'updating scene:', currFrameId)
-    execute_scene('NodeTreeGeo', is_framed=False)
+    execute_scene('NodeTree', is_framed=False)
 
 
 @bpy.app.handlers.persistent

@@ -116,13 +116,13 @@ def delete_scene():
     frameCache.clear()
 
 
-def execute_scene():
+def execute_scene(graph_name, is_framed):
     currFrameId = bpy.context.scene.frame_current
     currFrameCache = frameCache.setdefault(currFrameId, {})
 
     depsgraph = bpy.context.evaluated_depsgraph_get()
 
-    core.sceneSwitchToGraph(sceneId, 'NodeTree')
+    core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
     prepareCallbacks = []
@@ -151,11 +151,13 @@ def execute_scene():
             bpy.context.collection.objects.link(blenderObj)
         else:
             blenderObj = bpy.data.objects[outputName]
-            # todo: only need to copy the material actually:
-            blenderMesh = blenderObj.data.copy()
-            #blenderMesh = bpy.data.meshes.new(outputName)
-            #blenderMesh = blenderObj.data
-            blenderObj.data = blenderMesh
+            if is_framed:
+                # todo: only need to copy the material actually:
+                blenderMesh = blenderObj.data.copy()
+                #blenderMesh = bpy.data.meshes.new(outputName)
+                blenderObj.data = blenderMesh
+            else:
+                blenderMesh = blenderObj.data
         if any(map(any, matrix)):
             blenderObj.matrix_world = matrix
         currFrameCache[blenderObj.name] = blenderMesh.name
@@ -168,20 +170,19 @@ def execute_scene():
 frameCache = {}
 
 
-def update_scene():
+def update_frame():
     if sceneId is None:
         return
 
     global nextFrameId
     currFrameId = bpy.context.scene.frame_current
     if nextFrameId is None:
-        #nextFrameId = currFrameId
         nextFrameId = bpy.context.scene.frame_start
     if currFrameId > bpy.context.scene.frame_end:
         return
     if currFrameId == nextFrameId:
         print('executing frame:', currFrameId)
-        execute_scene()
+        execute_scene('NodeTree', is_framed=True)
         nextFrameId = currFrameId + 1
 
     if currFrameId not in frameCache:
@@ -197,9 +198,17 @@ def update_scene():
             blenderObj.data = blenderMesh
 
 
+def update_scene():
+    if sceneId is None:
+        return
+
+    print('updating scene')
+    execute_scene('NodeTreeGeo', is_framed=True)
+
+
 @bpy.app.handlers.persistent
 def frame_update_callback(*unused):
-    update_scene()
+    pass#update_frame()
 
 
 @bpy.app.handlers.persistent

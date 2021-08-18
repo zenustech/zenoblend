@@ -211,22 +211,27 @@ def update_scene():
 
 @bpy.app.handlers.persistent
 def frame_update_callback(*unused):
-    global sceneUpdateEntered
+    global nowUpdating
     try:
-        sceneUpdateEntered = True
+        nowUpdating = True
         update_scene()
         update_frame()
     finally:
-        sceneUpdateEntered = False
+        nowUpdating = False
 
 
-sceneUpdateEntered = False
+nowUpdating = False
 
 
 @bpy.app.handlers.persistent
 def scene_update_callback(*unused):
-    if not sceneUpdateEntered:
-        update_scene()
+    global nowUpdating
+    if not nowUpdating:
+        try:
+            nowUpdating = True
+            update_scene()
+        finally:
+            nowUpdating = False
 
 
 def register():

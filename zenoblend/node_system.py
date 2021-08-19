@@ -126,8 +126,8 @@ def def_node_class(name, inputs, outputs, category):
     return Def
 
 
-class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
-    '''Zeno specialized subgraph node'''
+class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
+    '''Zeno specialized Subgraph node'''
     bl_icon = 'COMMUNITY'
 
     graph_name: bpy.props.StringProperty()
@@ -141,7 +141,7 @@ class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
     #def draw_buttons(self, context, layout):
         #row = layout.row()
         #row.operator("node.zeno_reload_subgraph", text="Reload")
-        #row.operator("render.render", text="Goto")
+        #row.operator("node.zeno_goto_subgraph", text="Goto")
 
     def reinit_sockets(self):
         tree = bpy.data.node_groups[self.graph_name]
@@ -175,6 +175,57 @@ class ZenoNodeSubgraph(def_node_class('Subgraph', [], [], 'subgraph')):
             from_socket = from_node.outputs[from_socket]
             to_socket = to_node.inputs[to_socket]
             node_tree.links.new(from_socket, to_socket)
+
+
+"""
+class ZenoNode_MakeDict(def_node_class('MakeDict', [], [], 'dict')):
+    '''Zeno specialized MakeDict node'''
+    bl_icon = 'NODETREE'
+
+    def init(self, context):
+        self.zeno_inputs, self.zeno_outputs = [], []
+
+    def draw_label(self):
+        return self.graph_name
+
+    #def draw_buttons(self, context, layout):
+        #row = layout.row()
+        #row.operator("node.zeno_reload_subgraph", text="Reload")
+        #row.operator("node.zeno_goto_subgraph", text="Goto")
+
+    def reinit_sockets(self):
+        tree = bpy.data.node_groups[self.graph_name]
+        from .execute_operator import find_tree_sub_io_names
+        self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
+
+        links = []
+        for name, socket in self.inputs.items():
+            for link in socket.links:
+                links.append((
+                    link.from_node, link.from_socket.name,
+                    link.to_node, link.to_socket.name,
+                    ))
+            self.inputs.remove(socket)
+        for name, socket in self.outputs.items():
+            for link in socket.links:
+                links.append((
+                    link.from_node, link.from_socket.name,
+                    link.to_node, link.to_socket.name,
+                    ))
+            self.outputs.remove(socket)
+
+        self.init_sockets(self.zeno_inputs, self.zeno_outputs)
+
+        node_tree = self.id_data
+        for from_node, from_socket, to_node, to_socket in links:
+            if from_socket not in from_node.outputs:
+                continue
+            if to_socket not in to_node.inputs:
+                continue
+            from_socket = from_node.outputs[from_socket]
+            to_socket = to_node.inputs[to_socket]
+            node_tree.links.new(from_socket, to_socket)
+"""
 
 
 
@@ -213,8 +264,11 @@ def init_node_classes():
     node_pre_categories.clear()
 
     for title, inputs, outputs, category in node_descriptors:
-        Def = def_node_class(title, inputs, outputs, category)
+        Def = globals().get('ZenoNodes_' + title, None)
+        if Def is None:
+            Def = def_node_class(title, inputs, outputs, category)
         node_classes.append(Def)
+        if title == 'Subgraph': continue
         node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)
 
     node_categories = []
@@ -237,7 +291,7 @@ def init_node_subgraphs():
     init_node_subgraphs.initialized = True
 
     def make_node_item(graph_name):
-        return NodeItem("ZenoNodeSubgraph", label=graph_name,
+        return NodeItem("ZenoNode_Subgraph", label=graph_name,
             settings={"graph_name": repr(graph_name)})
 
     node_pre_subgraph_categories = {}
@@ -275,7 +329,6 @@ classes = (
     ZenoNodeTree,
     ZenoNodeSocket,
     ZenoNodeSocket_Dummy,
-    ZenoNodeSubgraph,
 )
 
 

@@ -111,11 +111,11 @@ def def_node_class(name, inputs, outputs, category):
         def reinit(self):
             self.reinit_sockets(inputs, outputs)
 
-        def init_sockets(self, inputs, outputs, allow_default=True):
+        def init_sockets(self, inputs, outputs):
             for type, name, defl in inputs:
                 type = eval_type(type)
                 socket = self.inputs.new(type, name)
-                if allow_default and defl:
+                if defl:
                     defl = eval_defl(defl, type)
                     if defl is not None:
                         socket.default_value = defl
@@ -129,7 +129,10 @@ def def_node_class(name, inputs, outputs, category):
 
         def reinit_sockets(self, inputs, outputs):
             links = []
+            defls = {}
             for name, socket in self.inputs.items():
+                if hasattr(socket, 'default_value'):
+                    defls[name] = type(socket), socket.default_value
                 for link in socket.links:
                     links.append((
                         link.from_node, link.from_socket.name,
@@ -144,7 +147,12 @@ def def_node_class(name, inputs, outputs, category):
                         ))
                 self.outputs.remove(socket)
 
-            self.init_sockets(inputs, outputs, allow_default=False)
+            self.init_sockets(inputs, outputs)
+
+            for name, socket in self.inputs.items():
+                if hasattr(socket, 'default_value'):
+                    if name in defls and type(socket) is defls[name][0]:
+                        socket.default_value = defls[name][1]
 
             node_tree = self.id_data
             for from_node, from_socket, to_node, to_socket in links:

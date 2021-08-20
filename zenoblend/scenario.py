@@ -262,7 +262,7 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
-    ourdeps = get_dependencies()
+    ourdeps = get_dependencies('NodeTree')
     for update in depsgraph.updates:
         object = update.id
         if isinstance(object, bpy.types.Mesh):
@@ -270,10 +270,9 @@ def scene_update_callback(scene, depsgraph):
         if isinstance(object, bpy.types.Object):
             if object.name in ourdeps:
                 break
-        print(update.id)
-        print(dir(update))
     else:
         return
+    print(time.strftime('[%H:%M:%S]'), 'scene needs update')
 
     global nowUpdating
     if not nowUpdating:

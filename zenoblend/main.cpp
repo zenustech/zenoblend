@@ -64,20 +64,20 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         scene->loadScene(jsonStr);
     });
 
-    m.def("graphGetEndpointNames", []
+    m.def("graphGetInputNames", []
             ( uintptr_t graphPtr
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        return graph->getGraphEndpointNames();
+        return graph->getGraphInputNames();
     });
 
-    m.def("graphGetEndpointSetNames", []
+    m.def("graphGetOutputNames", []
             ( uintptr_t graphPtr
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        return graph->getGraphEndpointSetNames();
+        return graph->getGraphOutputNames();
     });
 
     m.def("graphApply", []
@@ -88,7 +88,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         graph->applyGraph();
     });
 
-    m.def("graphSetEndpointMesh", []
+    m.def("graphSetInputMesh", []
             ( uintptr_t graphPtr
             , std::string endpName
             , std::array<std::array<float, 4>, 4> matrix
@@ -101,7 +101,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        graph->setGraphEndpointGetter(endpName, [=] () -> zeno::zany {
+        graph->setGraphInputPromise(endpName, [=] () -> zeno::zany {
             auto mesh = std::make_shared<zeno::BlenderMesh>();
             mesh->matrix = matrix;
             mesh->vert.resize(vertCount);
@@ -123,13 +123,13 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         });
     });
 
-    m.def("graphGetEndpointSetMesh", []
+    m.def("graphGetOutputMesh", []
             ( uintptr_t graphPtr
             , std::string const &endpName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto meshAny = graph->getGraphEndpointSetValue(endpName);
+        auto meshAny = graph->getGraphOutput2(endpName);
         auto mesh = zeno::smart_any_cast<std::shared_ptr<zeno::BlenderMesh>>(meshAny);
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;

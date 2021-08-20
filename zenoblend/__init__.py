@@ -6,7 +6,7 @@ Copyright (c) archibate <1931127624@qq.com> (2021- ). All Rights Reserved.
 
 
 bl_info = {
-        'name': 'Zeno-Blend',
+        'name': 'Zeno Blend',
         'description': 'Blender intergration of the Zeno node system',
         'author': 'archibate <1931127624@qq.com>',
         'version': (0, 0, 0),

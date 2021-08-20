@@ -116,11 +116,12 @@ def reload_scene():  # todo: have an option to turn off this
     from .execute_operator import dump_scene
     jsonStr = dump_scene()
     if lastJsonStr == jsonStr:
-        return
+        return False
     print(time.strftime('[%H:%M:%S]'), 'reload_scene')
     t0 = time.time()
     load_scene(jsonStr)
     print('reload_scene spent', '{:.4f}s'.format(time.time() - t0))
+    return True
 
 
 def delete_scene():
@@ -262,24 +263,32 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
-    ourdeps = get_dependencies('NodeTree')
-    for update in depsgraph.updates:
-        object = update.id
-        if isinstance(object, bpy.types.Mesh):
-            object = object.id_data
-        if not isinstance(object, bpy.types.Object):
-            continue
-        if object.name in ourdeps:
-            print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
-            break
+    needs_update = False
+
+    if reload_scene():
+        print(time.strftime('[%H:%M:%S]'), 'update cuz node graph')
+        needs_update = True
+
     else:
+        our_deps = get_dependencies('NodeTree')
+        for update in depsgraph.updates:
+            object = update.id
+            if isinstance(object, bpy.types.Mesh):
+                object = object.id_data
+            if not isinstance(object, bpy.types.Object):
+                continue
+            if object.name in our_deps:
+                print(time.strftime('[%H:%M:%S]'), 'update cuz:', object.name)
+                needs_update = True
+                break
+
+    if not needs_update:
         return
 
     global nowUpdating
     if not nowUpdating:
         try:
             nowUpdating = True
-            reload_scene()
             update_scene()
         finally:
             nowUpdating = False

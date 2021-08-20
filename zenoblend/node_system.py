@@ -108,11 +108,14 @@ def def_node_class(name, inputs, outputs, category):
         def init(self, context):
             self.init_sockets(inputs, outputs)
 
-        def init_sockets(self, inputs, outputs):
+        def reinit(self):
+            self.reinit_sockets(inputs, outputs)
+
+        def init_sockets(self, inputs, outputs, allow_default=True):
             for type, name, defl in inputs:
                 type = eval_type(type)
                 socket = self.inputs.new(type, name)
-                if defl:
+                if allow_default and defl:
                     defl = eval_defl(defl, type)
                     if defl is not None:
                         socket.default_value = defl
@@ -123,6 +126,35 @@ def def_node_class(name, inputs, outputs, category):
 
             self.inputs.new('ZenoNodeSocket_Dummy', 'SRC')
             self.outputs.new('ZenoNodeSocket_Dummy', 'DST')
+
+        def reinit_sockets(self, inputs, outputs):
+            links = []
+            for name, socket in self.inputs.items():
+                for link in socket.links:
+                    links.append((
+                        link.from_node, link.from_socket.name,
+                        link.to_node, link.to_socket.name,
+                        ))
+                self.inputs.remove(socket)
+            for name, socket in self.outputs.items():
+                for link in socket.links:
+                    links.append((
+                        link.from_node, link.from_socket.name,
+                        link.to_node, link.to_socket.name,
+                        ))
+                self.outputs.remove(socket)
+
+            self.init_sockets(inputs, outputs, allow_default=False)
+
+            node_tree = self.id_data
+            for from_node, from_socket, to_node, to_socket in links:
+                if from_socket not in from_node.outputs:
+                    continue
+                if to_socket not in to_node.inputs:
+                    continue
+                from_socket = from_node.outputs[from_socket]
+                to_socket = to_node.inputs[to_socket]
+                node_tree.links.new(from_socket, to_socket)
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
@@ -146,89 +178,12 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
         #row.operator("node.zeno_reload_subgraph", text="Reload")
         #row.operator("node.zeno_goto_subgraph", text="Goto")
 
-    def reinit_sockets(self):
+    def reinit(self):
         tree = bpy.data.node_groups[self.graph_name]
         from .execute_operator import find_tree_sub_io_names
         self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
 
-        links = []
-        for name, socket in self.inputs.items():
-            for link in socket.links:
-                links.append((
-                    link.from_node, link.from_socket.name,
-                    link.to_node, link.to_socket.name,
-                    ))
-            self.inputs.remove(socket)
-        for name, socket in self.outputs.items():
-            for link in socket.links:
-                links.append((
-                    link.from_node, link.from_socket.name,
-                    link.to_node, link.to_socket.name,
-                    ))
-            self.outputs.remove(socket)
-
-        self.init_sockets(self.zeno_inputs, self.zeno_outputs)
-
-        node_tree = self.id_data
-        for from_node, from_socket, to_node, to_socket in links:
-            if from_socket not in from_node.outputs:
-                continue
-            if to_socket not in to_node.inputs:
-                continue
-            from_socket = from_node.outputs[from_socket]
-            to_socket = to_node.inputs[to_socket]
-            node_tree.links.new(from_socket, to_socket)
-
-
-"""
-class ZenoNode_MakeDict(def_node_class('MakeDict', [], [], 'dict')):
-    '''Zeno specialized MakeDict node'''
-    bl_icon = 'NODETREE'
-
-    def init(self, context):
-        self.zeno_inputs, self.zeno_outputs = [], []
-
-    def draw_label(self):
-        return self.graph_name
-
-    #def draw_buttons(self, context, layout):
-        #row = layout.row()
-        #row.operator("node.zeno_reload_subgraph", text="Reload")
-        #row.operator("node.zeno_goto_subgraph", text="Goto")
-
-    def reinit_sockets(self):
-        tree = bpy.data.node_groups[self.graph_name]
-        from .execute_operator import find_tree_sub_io_names
-        self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
-
-        links = []
-        for name, socket in self.inputs.items():
-            for link in socket.links:
-                links.append((
-                    link.from_node, link.from_socket.name,
-                    link.to_node, link.to_socket.name,
-                    ))
-            self.inputs.remove(socket)
-        for name, socket in self.outputs.items():
-            for link in socket.links:
-                links.append((
-                    link.from_node, link.from_socket.name,
-                    link.to_node, link.to_socket.name,
-                    ))
-            self.outputs.remove(socket)
-
-        self.init_sockets(self.zeno_inputs, self.zeno_outputs)
-
-        node_tree = self.id_data
-        for from_node, from_socket, to_node, to_socket in links:
-            if from_socket not in from_node.outputs:
-                continue
-            if to_socket not in to_node.inputs:
-                continue
-            from_socket = from_node.outputs[from_socket]
-            to_socket = to_node.inputs[to_socket]
-            node_tree.links.new(from_socket, to_socket)
-"""
+        self.reinit_sockets(self.zeno_inputs, self.zeno_outputs)
 
 
 

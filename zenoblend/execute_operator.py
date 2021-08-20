@@ -35,8 +35,8 @@ class ZenoStopOperator(bpy.types.Operator):
 
 class ZenoReloadSubgraphOperator(bpy.types.Operator):
     """Reload Zeno subgraphs"""
-    bl_idname = "node.zeno_reload_subgraph"
-    bl_label = "Reload Subgraph"
+    bl_idname = "node.zeno_reload"
+    bl_label = "Reload"
 
     @classmethod
     def poll(cls, context):
@@ -55,7 +55,7 @@ def draw_menu(self, context):
         self.layout.separator()
         self.layout.operator("node.zeno_apply", text="Apply Graph")
         self.layout.operator("node.zeno_stop", text="Stop Running Graph")
-        self.layout.operator("node.zeno_reload_subgraph", text="Reload Subgraphs")
+        self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
 classes = (
@@ -82,8 +82,7 @@ def reinit_subgraph_sockets():
         if tree.bl_idname != 'ZenoNodeTree': continue
         for node_name, node in tree.nodes.items():
             if not hasattr(node, 'zeno_type'): continue
-            if node.zeno_type == 'Subgraph':
-                node.reinit_sockets()
+            node.reinit()
 
 
 def find_tree_sub_category(tree):

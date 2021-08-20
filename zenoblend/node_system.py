@@ -51,6 +51,7 @@ class ZenoNodeSocket_Dummy(NodeSocket):
 def eval_type(type):
     type_lut = {
         'int': 'NodeSocketInt',
+        'bool': 'NodeSocketBool',
         'float': 'NodeSocketFloat',
         'vec3f': 'NodeSocketVector',
         'color3f': 'NodeSocketColor',

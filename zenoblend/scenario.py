@@ -265,22 +265,22 @@ def scene_update_callback(scene, depsgraph):
 
     needs_update = False
 
-    if reload_scene():
-        print(time.strftime('[%H:%M:%S]'), 'update cuz node graph')
-        needs_update = True
-
+    our_deps = get_dependencies('NodeTree')
+    for update in depsgraph.updates:
+        object = update.id
+        if isinstance(object, bpy.types.Mesh):
+            object = object.id_data
+        if not isinstance(object, bpy.types.Object):
+            continue
+        if object.name in our_deps:
+            print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
+            needs_update = True
+            break
     else:
-        our_deps = get_dependencies('NodeTree')
-        for update in depsgraph.updates:
-            object = update.id
-            if isinstance(object, bpy.types.Mesh):
-                object = object.id_data
-            if not isinstance(object, bpy.types.Object):
-                continue
-            if object.name in our_deps:
-                print(time.strftime('[%H:%M:%S]'), 'update cuz:', object.name)
-                needs_update = True
-                break
+
+        if reload_scene():
+            print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
+            needs_update = True
 
     if not needs_update:
         return

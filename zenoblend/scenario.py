@@ -193,6 +193,14 @@ def execute_scene(graph_name, is_framed):
         cb()
 
 
+def get_dependencies(graph_name):
+    core.sceneSwitchToGraph(sceneId, graph_name)
+    graphPtr = core.sceneGetCurrentGraph(sceneId)
+
+    inputNames = core.graphGetEndpointNames(graphPtr)
+    return inputNames
+
+
 frameCache = {}
 
 
@@ -232,7 +240,7 @@ def update_scene():
 
 
 @bpy.app.handlers.persistent
-def frame_update_callback(*unused):
+def frame_update_callback(scene=None, *unused):
     if sceneId is None:
         return
 
@@ -250,8 +258,21 @@ nowUpdating = False
 
 
 @bpy.app.handlers.persistent
-def scene_update_callback(*unused):
+def scene_update_callback(scene, depsgraph):
     if sceneId is None:
+        return
+
+    ourdeps = get_dependencies()
+    for update in depsgraph.updates:
+        object = update.id
+        if isinstance(object, bpy.types.Mesh):
+            object = object.id_data
+        if isinstance(object, bpy.types.Object):
+            if object.name in ourdeps:
+                break
+        print(update.id)
+        print(dir(update))
+    else:
         return
 
     global nowUpdating

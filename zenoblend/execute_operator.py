@@ -33,8 +33,8 @@ class ZenoStopOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ZenoReloadSubgraphOperator(bpy.types.Operator):
-    """Reload Zeno subgraphs"""
+class ZenoReloadOperator(bpy.types.Operator):
+    """Reload Zeno graphs"""
     bl_idname = "node.zeno_reload"
     bl_label = "Reload"
 
@@ -61,7 +61,7 @@ def draw_menu(self, context):
 classes = (
     ZenoApplyOperator,
     ZenoStopOperator,
-    ZenoReloadSubgraphOperator,
+    ZenoReloadOperator,
 )
 
 

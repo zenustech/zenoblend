@@ -33,10 +33,10 @@ class ZenoStopOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class ZenoReloadSubgraphOperator(bpy.types.Operator):
-    """Reload Zeno subgraphs"""
-    bl_idname = "node.zeno_reload_subgraph"
-    bl_label = "Reload Subgraph"
+class ZenoReloadOperator(bpy.types.Operator):
+    """Reload Zeno graphs"""
+    bl_idname = "node.zeno_reload"
+    bl_label = "Reload"
 
     @classmethod
     def poll(cls, context):
@@ -55,13 +55,13 @@ def draw_menu(self, context):
         self.layout.separator()
         self.layout.operator("node.zeno_apply", text="Apply Graph")
         self.layout.operator("node.zeno_stop", text="Stop Running Graph")
-        self.layout.operator("node.zeno_reload_subgraph", text="Reload Subgraphs")
+        self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
 classes = (
     ZenoApplyOperator,
     ZenoStopOperator,
-    ZenoReloadSubgraphOperator,
+    ZenoReloadOperator,
 )
 
 
@@ -81,25 +81,29 @@ def reinit_subgraph_sockets():
     for tree_name, tree in bpy.data.node_groups.items():
         if tree.bl_idname != 'ZenoNodeTree': continue
         for node_name, node in tree.nodes.items():
-            if node.zeno_type == 'Subgraph':
-                node.reinit_sockets()
+            if not hasattr(node, 'zeno_type'): continue
+            node.reinit()
 
 
 def find_tree_sub_category(tree):
+    assert tree.bl_idname == 'ZenoNodeTree', tree
     if 'SubCategory' in tree.nodes:
         node = tree.nodes['SubCategory']
         if node.zeno_type == 'SubCategory':
             return node.inputs['name:'].default_value
     for node_name, node in tree.nodes.items():
+        if not hasattr(node, 'zeno_type'): continue
         if node.zeno_type == 'SubCategory':
             return node.inputs['name:'].default_value
     return 'uncategorized'
 
 
 def find_tree_sub_io_names(tree):
+    assert tree.bl_idname == 'ZenoNodeTree', tree
     inputs = []
     outputs = []
     for node_name, node in tree.nodes.items():
+        if not hasattr(node, 'zeno_type'): continue
         if node.zeno_type == 'SubInput':
             type = node.inputs['type:'].default_value
             name = node.inputs['name:'].default_value
@@ -114,7 +118,9 @@ def find_tree_sub_io_names(tree):
 
 
 def dump_tree(tree):
+    assert tree.bl_idname == 'ZenoNodeTree', tree
     for node_name, node in tree.nodes.items():
+        if not hasattr(node, 'zeno_type'): continue
         node_type = node.zeno_type
         yield ('addNode', node_type, node_name)
         for input_name, input in node.inputs.items():

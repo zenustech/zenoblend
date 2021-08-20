@@ -116,11 +116,12 @@ def reload_scene():  # todo: have an option to turn off this
     from .execute_operator import dump_scene
     jsonStr = dump_scene()
     if lastJsonStr == jsonStr:
-        return
+        return False
     print(time.strftime('[%H:%M:%S]'), 'reload_scene')
     t0 = time.time()
     load_scene(jsonStr)
     print('reload_scene spent', '{:.4f}s'.format(time.time() - t0))
+    return True
 
 
 def delete_scene():
@@ -143,12 +144,12 @@ def graph_deal_input(graphPtr, inputName):
     depsgraph = bpy.context.evaluated_depsgraph_get()
     preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
     meshData = meshFromBlender(preparedMesh)
-    core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
+    core.graphSetInputMesh(graphPtr, inputName, matrix, *meshData)
     return prepareCallback
 
 
 def graph_deal_output(graphPtr, outputName, is_framed):
-    outMeshPtr = core.graphGetEndpointSetMesh(graphPtr, outputName)
+    outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
     matrix = core.meshGetMatrix(outMeshPtr)
     if outputName not in bpy.data.objects:
         blenderMesh = bpy.data.meshes.new(outputName)
@@ -165,32 +166,38 @@ def graph_deal_output(graphPtr, outputName, is_framed):
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
     if is_framed:
+        currFrameId = bpy.context.scene.frame_current
+        currFrameCache = frameCache.setdefault(currFrameId, {})
         currFrameCache[blenderObj.name] = blenderMesh.name
     meshToBlender(outMeshPtr, blenderMesh)
 
 
 def execute_scene(graph_name, is_framed):
-    if is_framed:
-        currFrameId = bpy.context.scene.frame_current
-        currFrameCache = frameCache.setdefault(currFrameId, {})
-
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
     prepareCallbacks = []
-    inputNames = core.graphGetEndpointNames(graphPtr)
+    inputNames = core.graphGetInputNames(graphPtr)
     for inputName in inputNames:
         cb = graph_deal_input(graphPtr, inputName)
         prepareCallbacks.append(cb)
 
     core.graphApply(graphPtr)
 
-    outputNames = core.graphGetEndpointSetNames(graphPtr)
+    outputNames = core.graphGetOutputNames(graphPtr)
     for outputName in outputNames:
         graph_deal_output(graphPtr, outputName, is_framed)
 
     for cb in prepareCallbacks:
         cb()
+
+
+def get_dependencies(graph_name):
+    core.sceneSwitchToGraph(sceneId, graph_name)
+    graphPtr = core.sceneGetCurrentGraph(sceneId)
+
+    inputNames = core.graphGetInputNames(graphPtr)
+    return inputNames
 
 
 frameCache = {}
@@ -232,7 +239,7 @@ def update_scene():
 
 
 @bpy.app.handlers.persistent
-def frame_update_callback(*unused):
+def frame_update_callback(scene=None, *unused):
     if sceneId is None:
         return
 
@@ -250,30 +257,51 @@ nowUpdating = False
 
 
 @bpy.app.handlers.persistent
-def scene_update_callback(*unused):
+def scene_update_callback(scene, depsgraph):
     if sceneId is None:
+        return
+
+    needs_update = False
+
+    our_deps = get_dependencies('NodeTree')
+    for update in depsgraph.updates:
+        object = update.id
+        if isinstance(object, bpy.types.Mesh):
+            object = object.id_data
+        if not isinstance(object, bpy.types.Object):
+            continue
+        if object.name in our_deps:
+            print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
+            needs_update = True
+            break
+    else:
+
+        if reload_scene():
+            print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
+            needs_update = True
+
+    if not needs_update:
         return
 
     global nowUpdating
     if not nowUpdating:
         try:
             nowUpdating = True
-            reload_scene()
             update_scene()
         finally:
             nowUpdating = False
 
 
 def register():
-    if frame_update_callback not in bpy.app.handlers.frame_change_pre:
-        bpy.app.handlers.frame_change_pre.append(frame_update_callback)
+    if frame_update_callback not in bpy.app.handlers.frame_change_post:
+        bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
 
 
 def unregister():
     delete_scene()
-    if frame_update_callback in bpy.app.handlers.frame_change_pre:
-        bpy.app.handlers.frame_change_pre.remove(frame_update_callback)
+    if frame_update_callback in bpy.app.handlers.frame_change_post:
+        bpy.app.handlers.frame_change_post.remove(frame_update_callback)
     if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)

@@ -81,25 +81,30 @@ def reinit_subgraph_sockets():
     for tree_name, tree in bpy.data.node_groups.items():
         if tree.bl_idname != 'ZenoNodeTree': continue
         for node_name, node in tree.nodes.items():
+            if not hasattr(node, 'zeno_type'): continue
             if node.zeno_type == 'Subgraph':
                 node.reinit_sockets()
 
 
 def find_tree_sub_category(tree):
+    assert tree.bl_idname == 'ZenoNodeTree', tree
     if 'SubCategory' in tree.nodes:
         node = tree.nodes['SubCategory']
         if node.zeno_type == 'SubCategory':
             return node.inputs['name:'].default_value
     for node_name, node in tree.nodes.items():
+        if not hasattr(node, 'zeno_type'): continue
         if node.zeno_type == 'SubCategory':
             return node.inputs['name:'].default_value
     return 'uncategorized'
 
 
 def find_tree_sub_io_names(tree):
+    assert tree.bl_idname == 'ZenoNodeTree', tree
     inputs = []
     outputs = []
     for node_name, node in tree.nodes.items():
+        if not hasattr(node, 'zeno_type'): continue
         if node.zeno_type == 'SubInput':
             type = node.inputs['type:'].default_value
             name = node.inputs['name:'].default_value
@@ -114,7 +119,9 @@ def find_tree_sub_io_names(tree):
 
 
 def dump_tree(tree):
+    assert tree.bl_idname == 'ZenoNodeTree', tree
     for node_name, node in tree.nodes.items():
+        if not hasattr(node, 'zeno_type'): continue
         node_type = node.zeno_type
         yield ('addNode', node_type, node_name)
         for input_name, input in node.inputs.items():

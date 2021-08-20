@@ -143,12 +143,12 @@ def graph_deal_input(graphPtr, inputName):
     depsgraph = bpy.context.evaluated_depsgraph_get()
     preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
     meshData = meshFromBlender(preparedMesh)
-    core.graphSetEndpointMesh(graphPtr, inputName, matrix, *meshData)
+    core.graphSetInputMesh(graphPtr, inputName, matrix, *meshData)
     return prepareCallback
 
 
 def graph_deal_output(graphPtr, outputName, is_framed):
-    outMeshPtr = core.graphGetEndpointSetMesh(graphPtr, outputName)
+    outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
     matrix = core.meshGetMatrix(outMeshPtr)
     if outputName not in bpy.data.objects:
         blenderMesh = bpy.data.meshes.new(outputName)
@@ -178,14 +178,14 @@ def execute_scene(graph_name, is_framed):
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
     prepareCallbacks = []
-    inputNames = core.graphGetEndpointNames(graphPtr)
+    inputNames = core.graphGetInputNames(graphPtr)
     for inputName in inputNames:
         cb = graph_deal_input(graphPtr, inputName)
         prepareCallbacks.append(cb)
 
     core.graphApply(graphPtr)
 
-    outputNames = core.graphGetEndpointSetNames(graphPtr)
+    outputNames = core.graphGetOutputNames(graphPtr)
     for outputName in outputNames:
         graph_deal_output(graphPtr, outputName, is_framed)
 
@@ -197,7 +197,7 @@ def get_dependencies(graph_name):
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
-    inputNames = core.graphGetEndpointNames(graphPtr)
+    inputNames = core.graphGetInputNames(graphPtr)
     return inputNames
 
 
@@ -267,12 +267,13 @@ def scene_update_callback(scene, depsgraph):
         object = update.id
         if isinstance(object, bpy.types.Mesh):
             object = object.id_data
-        if isinstance(object, bpy.types.Object):
-            if object.name in ourdeps:
-                break
+        if not isinstance(object, bpy.types.Object):
+            continue
+        if object.name in ourdeps:
+            print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
+            break
     else:
         return
-    print(time.strftime('[%H:%M:%S]'), 'scene needs update')
 
     global nowUpdating
     if not nowUpdating:

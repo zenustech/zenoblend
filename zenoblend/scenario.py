@@ -148,7 +148,7 @@ def graph_deal_input(graphPtr, inputName):
     return prepareCallback
 
 
-def graph_deal_output(graphPtr, outputName, is_framed):
+def graph_deal_output(graphPtr, outputName, currFrameCache=None):
     outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
     matrix = core.meshGetMatrix(outMeshPtr)
     if outputName not in bpy.data.objects:
@@ -157,7 +157,7 @@ def graph_deal_output(graphPtr, outputName, is_framed):
         bpy.context.collection.objects.link(blenderObj)
     else:
         blenderObj = bpy.data.objects[outputName]
-        if is_framed:
+        if currFrameCache:
             # todo: only need to copy the material actually:
             blenderMesh = blenderObj.data.copy()
             blenderObj.data = blenderMesh
@@ -165,7 +165,7 @@ def graph_deal_output(graphPtr, outputName, is_framed):
             blenderMesh = blenderObj.data
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
-    if is_framed:
+    if currFrameCache:
         currFrameCache[blenderObj.name] = blenderMesh.name
     meshToBlender(outMeshPtr, blenderMesh)
 
@@ -174,6 +174,8 @@ def execute_scene(graph_name, is_framed):
     if is_framed:
         currFrameId = bpy.context.scene.frame_current
         currFrameCache = frameCache.setdefault(currFrameId, {})
+    else:
+        currFrameCache = None
 
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
@@ -188,7 +190,7 @@ def execute_scene(graph_name, is_framed):
 
     outputNames = core.graphGetOutputNames(graphPtr)
     for outputName in outputNames:
-        graph_deal_output(graphPtr, outputName, is_framed)
+        graph_deal_output(graphPtr, outputName, currFrameCache)
 
     for cb in prepareCallbacks:
         cb()
@@ -295,15 +297,15 @@ def scene_update_callback(scene, depsgraph):
 
 
 def register():
-    if frame_update_callback not in bpy.app.handlers.frame_change_pre:
-        bpy.app.handlers.frame_change_pre.append(frame_update_callback)
+    if frame_update_callback not in bpy.app.handlers.frame_change_post:
+        bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
 
 
 def unregister():
     delete_scene()
-    if frame_update_callback in bpy.app.handlers.frame_change_pre:
-        bpy.app.handlers.frame_change_pre.remove(frame_update_callback)
+    if frame_update_callback in bpy.app.handlers.frame_change_post:
+        bpy.app.handlers.frame_change_post.remove(frame_update_callback)
     if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)

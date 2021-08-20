@@ -92,6 +92,8 @@ def eval_defl(defl, type):
             return float(defl)
         elif type == 'NodeSocketString':
             return str(defl)
+        elif type == 'NodeSocketBool':
+            return bool(int(defl))
     except ValueError:
         return None
 

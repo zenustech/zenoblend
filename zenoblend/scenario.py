@@ -148,7 +148,7 @@ def graph_deal_input(graphPtr, inputName):
     return prepareCallback
 
 
-def graph_deal_output(graphPtr, outputName, currFrameCache=None):
+def graph_deal_output(graphPtr, outputName, is_framed):
     outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
     matrix = core.meshGetMatrix(outMeshPtr)
     if outputName not in bpy.data.objects:
@@ -157,7 +157,7 @@ def graph_deal_output(graphPtr, outputName, currFrameCache=None):
         bpy.context.collection.objects.link(blenderObj)
     else:
         blenderObj = bpy.data.objects[outputName]
-        if currFrameCache:
+        if is_framed:
             # todo: only need to copy the material actually:
             blenderMesh = blenderObj.data.copy()
             blenderObj.data = blenderMesh
@@ -165,18 +165,14 @@ def graph_deal_output(graphPtr, outputName, currFrameCache=None):
             blenderMesh = blenderObj.data
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
-    if currFrameCache:
+    if is_framed:
+        currFrameId = bpy.context.scene.frame_current
+        currFrameCache = frameCache.setdefault(currFrameId, {})
         currFrameCache[blenderObj.name] = blenderMesh.name
     meshToBlender(outMeshPtr, blenderMesh)
 
 
 def execute_scene(graph_name, is_framed):
-    if is_framed:
-        currFrameId = bpy.context.scene.frame_current
-        currFrameCache = frameCache.setdefault(currFrameId, {})
-    else:
-        currFrameCache = None
-
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
@@ -190,7 +186,7 @@ def execute_scene(graph_name, is_framed):
 
     outputNames = core.graphGetOutputNames(graphPtr)
     for outputName in outputNames:
-        graph_deal_output(graphPtr, outputName, currFrameCache)
+        graph_deal_output(graphPtr, outputName, is_framed)
 
     for cb in prepareCallbacks:
         cb()

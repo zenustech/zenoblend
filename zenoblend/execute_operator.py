@@ -110,16 +110,16 @@ def load_from_zsg(prog):
                 if srcNode is None:
                     continue
                 if key not in node.inputs:
-                    print('inputs KeyError:', key)
-                    continue
+                    node.inputs.new('ZenoNodeSocket', key)
                 if srcNode not in nodesLut:
                     print('nodesLut KeyError:', srcNode)
                     continue
                 srcNode = nodesLut[srcNode]
                 if srcNode not in srcNode.outputs:
-                    print('outputs KeyError:', srcNode)
-                    continue
+                    srcNode.outputs.new('ZenoNodeSocket', key)
                 tree.links.new(node.inputs[key], srcNode.outputs[srcSock])
+
+bpy.load_zsg = load_from_zsg
 
 
 def find_tree_sub_category(tree):

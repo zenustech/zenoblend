@@ -182,10 +182,10 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
     def draw_label(self):
         return self.graph_name
 
-    #def draw_buttons(self, context, layout):
-        #row = layout.row()
-        #row.operator("node.zeno_reload_subgraph", text="Reload")
-        #row.operator("node.zeno_goto_subgraph", text="Goto")
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.operator("node.zeno_reload", text="Reload")
+        #row.operator("node.zeno_goto", text="Goto")
 
     def reinit(self):
         tree = bpy.data.node_groups[self.graph_name]
@@ -193,6 +193,15 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
         self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
 
         self.reinit_sockets(self.zeno_inputs, self.zeno_outputs)
+
+
+class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
+    '''Zeno specialized FinalOutput node'''
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.operator("node.zeno_apply", text="Apply")
+        row.operator("node.zeno_stop", text="Stop")
 
 
 

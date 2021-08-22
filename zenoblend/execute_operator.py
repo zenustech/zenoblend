@@ -105,6 +105,10 @@ def load_from_zsg(prog):
                 except ValueError:
                     print('ValueError:', key, connection)
                     continue
+                if deflVal is not None:
+                    node.inputs[key].default_value = deflVal
+                if srcNode is None:
+                    continue
                 if key not in node.inputs:
                     print('inputs KeyError:', key)
                     continue

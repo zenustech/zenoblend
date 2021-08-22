@@ -86,20 +86,23 @@ def reinit_subgraph_sockets():
 
 
 def load_from_zsg(prog):
-    scene = prog['graph']
-    for key, val in scene.items():
+    graphs = prog['graph']
+    for key, val in graphs.items():
         if key in bpy.data.node_groups:
             del bpy.data.node_groups[key]
-        tree = bpy.data.node_groups.new(key)
+        tree = bpy.data.node_groups.new(key, 'ZenoNodeTree')
         nodes = val['nodes']
 
         nodesLut = {}
         for ident, data in nodes.items():
-            node = tree.nodes.new('ZenoNode_' + data['name'])
+            type = data['name']
+            if type in graphs:
+                type = 'Subgraph'
+            node = tree.nodes.new('ZenoNode_' + type)
             nodesLut[ident] = node
 
         for ident, data in nodes.items():
-            for key, connection in data['inputs']:
+            for key, connection in data['inputs'].items():
                 try:
                     srcNode, srcSock, deflVal = connection
                 except ValueError:
@@ -119,7 +122,14 @@ def load_from_zsg(prog):
                     srcNode.outputs.new('ZenoNodeSocket', key)
                 tree.links.new(node.inputs[key], srcNode.outputs[srcSock])
 
-bpy.load_zsg = load_from_zsg
+            for key, value in data['params'].items():
+                if key not in node.inputs:
+                    print('KeyError:', key)
+                    continue
+                key = key + ':'
+                node.inputs[key].default_value = value
+
+bpy.load_zsg = lambda path: load_from_zsg(__import__('json').load(open(path)))
 
 
 def find_tree_sub_category(tree):

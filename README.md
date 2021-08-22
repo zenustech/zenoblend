@@ -12,6 +12,8 @@ To fetch ZENO which is included a submodule.
 
 ## Developer Build
 
+> NOTE: It's suggested to use Blender 2.93 or 3.0, other versions are untested now thus may not work.
+
 ### Linux
 
 ```bash

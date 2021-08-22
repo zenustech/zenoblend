@@ -85,6 +85,39 @@ def reinit_subgraph_sockets():
             node.reinit()
 
 
+def load_from_zsg(prog):
+    scene = prog['graph']
+    for key, val in scene.items():
+        if key in bpy.data.node_groups:
+            del bpy.data.node_groups[key]
+        tree = bpy.data.node_groups.new(key)
+        nodes = val['nodes']
+
+        nodesLut = {}
+        for ident, data in nodes.items():
+            node = tree.nodes.new('ZenoNode_' + data['name'])
+            nodesLut[ident] = node
+
+        for ident, data in nodes.items():
+            for key, connection in data['inputs']:
+                try:
+                    srcNode, srcSock, deflVal = connection
+                except ValueError:
+                    print('ValueError:', key, connection)
+                    continue
+                if key not in node.inputs:
+                    print('inputs KeyError:', key)
+                    continue
+                if srcNode not in nodesLut:
+                    print('nodesLut KeyError:', srcNode)
+                    continue
+                srcNode = nodesLut[srcNode]
+                if srcNode not in srcNode.outputs:
+                    print('outputs KeyError:', srcNode)
+                    continue
+                tree.links.new(node.inputs[key], srcNode.outputs[srcSock])
+
+
 def find_tree_sub_category(tree):
     assert tree.bl_idname == 'ZenoNodeTree', tree
     if 'SubCategory' in tree.nodes:

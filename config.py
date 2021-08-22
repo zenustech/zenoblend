@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.9
 
+import sys
 import subprocess
 
 args = [
+'-DPYTHON_EXECUTABLE=' + sys.executable,
 '-DCMAKE_BUILD_TYPE=Release',
-#'-DPYTHON_EXECUTABLE=/usr/bin/python3.9',
 #'-DCMAKE_BUILD_TYPE=Debug',
 '-DZENOFX_ENABLE_OPENVDB:BOOL=ON',
 '-DEXTENSION_bmeshops:BOOL=ON',

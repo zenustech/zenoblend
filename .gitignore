@@ -7,3 +7,5 @@ __pycache__/
 *.dylib
 /zenoblend/bin/
 /dist
+/.vs
+/CMakeSettings.json

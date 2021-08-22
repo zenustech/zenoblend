@@ -235,7 +235,7 @@ enum {
 #
 typedef struct IDOverrideLibraryRuntime {
   struct GHash *rna_path_to_override_properties;
-  uint tag;
+  unsigned int tag;
 } IDOverrideLibraryRuntime;
 
 /* IDOverrideLibraryRuntime->tag. */

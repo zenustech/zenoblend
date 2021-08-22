@@ -3,6 +3,7 @@
 import subprocess
 
 args = [
+#'-DPYTHON_EXECUTABLE=/usr/bin/python3.9',
 '-DCMAKE_BUILD_TYPE=Release',
 '-DZENOFX_ENABLE_OPENVDB:BOOL=ON',
 '-DEXTENSION_bmeshops:BOOL=ON',

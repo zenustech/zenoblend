@@ -95,13 +95,22 @@ def load_from_zsg(prog):
 
         nodesLut = {}
         for ident, data in nodes.items():
+            if 'special' in data: continue
             type = data['name']
             if type in graphs:
                 type = 'Subgraph'
-            node = tree.nodes.new('ZenoNode_' + type)
+            try:
+                node = tree.nodes.new('ZenoNode_' + type)
+            except RuntimeError:
+                print('RuntimeError:', type)
+                continue
+            node.location.x, node.location.y = data['uipos']
             nodesLut[ident] = node
+            if type == 'Subgraph':
+                node.inputs['name:'].default_value = data['name']
 
         for ident, data in nodes.items():
+            if 'special' in data: continue
             for key, connection in data['inputs'].items():
                 try:
                     srcNode, srcSock, deflVal = connection
@@ -118,15 +127,15 @@ def load_from_zsg(prog):
                     print('nodesLut KeyError:', srcNode)
                     continue
                 srcNode = nodesLut[srcNode]
-                if srcNode not in srcNode.outputs:
-                    srcNode.outputs.new('ZenoNodeSocket', key)
+                if srcSock not in srcNode.outputs:
+                    srcNode.outputs.new('ZenoNodeSocket', srcSock)
                 tree.links.new(node.inputs[key], srcNode.outputs[srcSock])
 
             for key, value in data['params'].items():
+                key = key + ':'
                 if key not in node.inputs:
                     print('KeyError:', key)
                     continue
-                key = key + ':'
                 node.inputs[key].default_value = value
 
 bpy.load_zsg = lambda path: load_from_zsg(__import__('json').load(open(path)))

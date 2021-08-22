@@ -74,6 +74,7 @@ def eval_category_icon(type):
         'control': 'SCRIPT',
         'Rigid': 'RIGID_BODY',
         'FLIPSolver': 'MATFLUID',
+        'FLIP': 'MATFLUID',
         'cloth': 'MATCLOTH',
         'string': 'FILE_FOLDER',
         'numeric': 'PLUS',

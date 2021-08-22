@@ -85,6 +85,7 @@ def reinit_subgraph_sockets():
             node.reinit()
 
 
+'''
 def load_from_zsg(prog):
     graphs = prog['graph']
     for key, val in graphs.items():
@@ -102,12 +103,13 @@ def load_from_zsg(prog):
             try:
                 node = tree.nodes.new('ZenoNode_' + type)
             except RuntimeError:
-                print('RuntimeError:', type)
+                print('nodetype RuntimeError:', type)
                 continue
             node.location.x, node.location.y = data['uipos']
             nodesLut[ident] = node
             if type == 'Subgraph':
                 node.inputs['name:'].default_value = data['name']
+            node.init(None)
 
         for ident, data in nodes.items():
             if 'special' in data: continue
@@ -115,7 +117,7 @@ def load_from_zsg(prog):
                 try:
                     srcNode, srcSock, deflVal = connection
                 except ValueError:
-                    print('ValueError:', key, connection)
+                    print('connection ValueError:', ident, key, connection)
                     continue
                 if deflVal is not None:
                     node.inputs[key].default_value = deflVal
@@ -124,7 +126,7 @@ def load_from_zsg(prog):
                 if key not in node.inputs:
                     node.inputs.new('ZenoNodeSocket', key)
                 if srcNode not in nodesLut:
-                    print('nodesLut KeyError:', srcNode)
+                    print('nodesLut KeyError:', ident, srcNode)
                     continue
                 srcNode = nodesLut[srcNode]
                 if srcSock not in srcNode.outputs:
@@ -134,11 +136,12 @@ def load_from_zsg(prog):
             for key, value in data['params'].items():
                 key = key + ':'
                 if key not in node.inputs:
-                    print('KeyError:', key)
+                    print('params KeyError:', ident, key)
                     continue
                 node.inputs[key].default_value = value
 
-bpy.load_zsg = lambda path: load_from_zsg(__import__('json').load(open(path)))
+#bpy.load_zsg = lambda path: load_from_zsg(__import__('json').load(open(path)))
+'''
 
 
 def find_tree_sub_category(tree):

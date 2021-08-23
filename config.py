@@ -6,7 +6,8 @@ import subprocess
 args = [
 '-DPYTHON_EXECUTABLE=' + sys.executable,
 '-DCMAKE_BUILD_TYPE=Release',
-#'-DCMAKE_BUILD_TYPE=Debug',
+#'-DCMAKE_BUILD_TYPE=Debug',#
+#'-DCMAKE_TOOLCHAIN_FILE=C:/Users/archibate/vcpkg/scripts/buildsystems/vcpkg.cmake',#
 '-DZENOFX_ENABLE_OPENVDB:BOOL=ON',
 '-DEXTENSION_bmeshops:BOOL=ON',
 '-DEXTENSION_oldzenbase:BOOL=ON',

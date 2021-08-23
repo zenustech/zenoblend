@@ -2,7 +2,16 @@
 
 Integrate the [ZENO node system](https://github.com/zenustech/zeno) into Blender for creating robust physics animations!
 
-# Setup
+# End-user Installation
+
+Goto [Release page](https://github.com/zenustech/zenoblend/releases), and click Assets -> download `zeno-linux-20xx.x.x.zip`.
+
+Then, start Blender and `Edit -> Preferences -> Add-ons -> Install`, and choose the file you just downloaded.
+Afterwards, type 'Zeno' in the search bar, and tick the `Physics: Zeno Blend` line it pops in.
+
+# Developer Build
+
+## Setup
 
 First of all, please run this command:
 ```bash
@@ -10,17 +19,31 @@ git submodule update --init --recursive
 ```
 To fetch ZENO which is included a submodule.
 
-## Developer Build
-
-> NOTE: It's suggested to use Blender 2.93 or 3.0, other versions are untested now thus may not work.
+## Requirements
 
 > For configurations of ZENO, please refer to [the README of ZENO itself](https://github.com/zenustech/zeno/blob/master/README.md).
 > This README will focus on ZenoBlend itself here.
 
+You need **Python 3.9** cause latest Blender use it too.
+
+### Ubuntu 20.04
+
+```bash
+apt-get install -y python3.9-dev
+```
+
+### Windows
+
+Install **Python 3.9** with a `.msi` from https://www.python.org, and add it to PATH.
+
+## Build
+
+> NOTE: It's suggested to use Blender 2.93 or 3.0, other versions are untested now thus may not work.
+
 ### Linux
 
 ```bash
-cmake -B build
+cmake -B build -DPYTHON_EXECUTABLE=$(which python3.9)
 cmake --build build --parallel
 ```
 

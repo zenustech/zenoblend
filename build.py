@@ -7,14 +7,16 @@ import argparse
 import subprocess
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument('--config', default='Release')
 if sys.platform == 'win32':
     tcpath = os.expanduser('~') + '\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
     if not os.path.exists(tcpath):
         tcpath = ''
 else:
     tcpath = ''
+
+
+ap = argparse.ArgumentParser()
+ap.add_argument('--config', default='Release')
 ap.add_argument('--toolchain', type=argparse.FileType('r'), default=tcpath)
 ap.add_argument('--clean', action='store_true')
 ap.add_argument('--with-openvdb', action='store_true')

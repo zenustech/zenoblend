@@ -20,7 +20,7 @@ print('==> release version={} os_name={}'.format(version, os_name))
 
 if os_name == 'linux':
     print('==> copying linux shared libraries')
-    subprocess.check_call([sys.executable, 'scripts/linux_dist.py'])
+    subprocess.check_call([sys.executable, 'scripts/linux_dist_helper.py'])
 
 print('==> creating packaging directory')
 shutil.rmtree('dist', ignore_errors=True)

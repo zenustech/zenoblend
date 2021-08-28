@@ -88,6 +88,20 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         graph->applyGraph();
     });
 
+    m.def("graphSetInputAxis", []
+            ( uintptr_t graphPtr
+            , std::string endpName
+            , std::array<std::array<float, 4>, 4> matrix
+            ) -> void
+    {
+        auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
+        graph->setGraphInputPromise(endpName, [=] () -> zeno::zany {
+            auto axis = std::make_shared<zeno::BlenderAxis>();
+            axis->matrix = matrix;
+            return axis;
+        });
+    });
+
     m.def("graphSetInputMesh", []
             ( uintptr_t graphPtr
             , std::string endpName

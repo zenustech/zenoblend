@@ -136,6 +136,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             return mesh;
         });
     });
+    // todo: support input/output volume too
 
     m.def("graphGetOutputMesh", []
             ( uintptr_t graphPtr

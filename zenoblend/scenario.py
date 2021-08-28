@@ -141,7 +141,7 @@ def graph_deal_input(graphPtr, inputName):
     blenderObj = bpy.data.objects[inputName]
     matrix = tuple(map(tuple, blenderObj.matrix_world))
     depsgraph = bpy.context.evaluated_depsgraph_get()
-    prepareCallback = lambda: NOne
+    prepareCallback = lambda: None
     blenderMesh = blenderObj.data
 
     if blenderMesh is None:

@@ -139,23 +139,32 @@ def graph_deal_input(graphPtr, inputName):
     if inputName not in bpy.data.objects:
         raise RuntimeError('No object named `{}` in scene'.format(inputName))
     blenderObj = bpy.data.objects[inputName]
-    blenderMesh = blenderObj.data
     matrix = tuple(map(tuple, blenderObj.matrix_world))
     depsgraph = bpy.context.evaluated_depsgraph_get()
-    preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
-    meshData = meshFromBlender(preparedMesh)
-    core.graphSetInputMesh(graphPtr, inputName, matrix, *meshData)
+    prepareCallback = lambda: NOne
+    blenderMesh = blenderObj.data
+
+    if blenderMesh is None:
+        core.graphSetInputAxis(graphPtr, inputName, matrix)
+
+    elif isinstance(blenderMesh, bpy.types.Mesh):
+        preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
+        meshData = meshFromBlender(preparedMesh)
+        core.graphSetInputMesh(graphPtr, inputName, matrix, *meshData)
+
+    else:
+        raise RuntimeError('Unexpected input object type: {}'.format(blenderMesh))
+
     return prepareCallback
 
 
 def graph_deal_output(graphPtr, outputName, is_framed):
-    outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
-    matrix = core.meshGetMatrix(outMeshPtr)
     if outputName not in bpy.data.objects:
         print('WARNING: object {} not exist, creating now'.format(outputName))
         blenderMesh = bpy.data.meshes.new(outputName)
         blenderObj = bpy.data.objects.new(outputName, blenderMesh)
         bpy.context.collection.objects.link(blenderObj)
+
     else:
         blenderObj = bpy.data.objects[outputName]
         if is_framed:
@@ -164,12 +173,17 @@ def graph_deal_output(graphPtr, outputName, is_framed):
             blenderObj.data = blenderMesh
         else:
             blenderMesh = blenderObj.data
+
+    outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
+    matrix = core.meshGetMatrix(outMeshPtr)
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
+
     if is_framed:
         currFrameId = bpy.context.scene.frame_current
         currFrameCache = frameCache.setdefault(currFrameId, {})
         currFrameCache[blenderObj.name] = blenderMesh.name
+
     meshToBlender(outMeshPtr, blenderMesh)
 
 

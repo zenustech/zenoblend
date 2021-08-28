@@ -184,7 +184,7 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
 
     def draw_buttons(self, context, layout):
         row = layout.row()
-        row.operator("node.zeno_reload", text="Reload")
+        row.operator("node.zeno_reload", text="Load")
         #row.operator("node.zeno_goto", text="Goto")
 
     def reinit(self):
@@ -240,7 +240,7 @@ def init_node_classes():
     node_pre_categories.clear()
 
     for title, inputs, outputs, category in node_descriptors:
-        Def = globals().get('ZenoNodes_' + title, None)
+        Def = globals().get('ZenoNode_' + title, None)
         if Def is None:
             Def = def_node_class(title, inputs, outputs, category)
         node_classes.append(Def)

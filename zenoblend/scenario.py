@@ -81,6 +81,11 @@ def meshToBlender(meshPtr, mesh):
     vertPtr = mesh.vertices[0].as_pointer() if vertCount else 0
     core.meshGetVertices(meshPtr, vertPtr, vertCount)
 
+    if 'scale' not in mesh.attributes:
+        mesh.attributes.new(type='FLOAT', domain='POINT', name='scale')
+    vertAttrPtr = mesh.attributes['scale'].data[0].as_pointer() if vertCount else 0
+    core.meshGetVertAttr(meshPtr, vertAttrPtr, vertCount)
+
     loopCount = core.meshGetLoopsCount(meshPtr)
     mesh.loops.add(loopCount)
     assert loopCount == len(mesh.loops), (loopCount, len(mesh.loops))

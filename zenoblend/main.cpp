@@ -181,6 +181,19 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
+    m.def("meshGetVertAttr", []
+    (uintptr_t meshPtr
+        , uintptr_t vertAttrPtr
+        , size_t vertCount
+        ) -> void
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+        auto vertAttr = reinterpret_cast<MFloatProperty*>(vertAttrPtr);
+        for (int i = 0; i < vertCount; i++) {
+            vertAttr[i].f = mesh->vert_attr_scale[i];
+        }
+    });
+
     m.def("meshGetPolygonsCount", []
             ( uintptr_t meshPtr
             ) -> size_t

@@ -138,6 +138,9 @@ def eval_defl(defl, type):
             return int(defl)
         elif type == 'NodeSocketFloat':
             return float(defl)
+        elif type == 'NodeSocketVector':
+            x, y, z = defl.split(',')
+            return [float(x), float(y), float(z)]
         elif type == 'NodeSocketString':
             return str(defl)
         elif type == 'NodeSocketBool':

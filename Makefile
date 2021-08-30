@@ -3,7 +3,7 @@
 ################################################################
 
 run: all
-	optirun blender -P blender.py -p 0 0 940 1080
+	optirun blender -P blender.py ~/Documents/testvertcolor.blend -p 0 0 940 1080
 
 baterun: all
 	optirun blender ~/Documents/Stair1.blend -P blender.py -p 0 0 940 1080

@@ -1,7 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
+//#include <pybind11/stl_bind.h>
 namespace py = pybind11;
 
 #include <blender/DNA_mesh_types.h>
@@ -11,7 +11,7 @@ namespace py = pybind11;
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
 
-PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
+//PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -185,7 +185,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
-    py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
+    //py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
 
     m.def("getAttrNameType", []
         ( uintptr_t meshPtr
@@ -253,6 +253,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> size_t
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        printf("fucking %zd\n", mesh->loop.size());
         return mesh->loop.size();
     });
 

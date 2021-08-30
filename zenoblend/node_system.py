@@ -1,6 +1,9 @@
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
 from nodeitems_utils import NodeCategory, NodeItem
+from nodeitems_utils import register_node_categories
+from nodeitems_utils import unregister_node_categories
+from bpy.utils import register_class, unregister_class
 
 
 class ZenoNodeTree(NodeTree):
@@ -47,8 +50,51 @@ class ZenoNodeSocket_Dummy(NodeSocket):
         return (0.4, 0.4, 0.4, 1.0)
 
 
+enum_types_cache = {}
+
+def get_enum_socket_type(type):
+    from hashlib import md5
+    type_id = 'ZenoNodeSocket_Enum_' + md5(str(type).encode()).hexdigest()
+    if type_id in enum_types_cache:
+        return type_id
+
+    enums = type.split()[1:]
+    items = []
+    for key in enums:
+        items.append((key, key, key))
+
+    class Def(NodeSocket):
+        '''Zeno node enum socket type'''
+        bl_label = "Zeno Node Socket Enum (" + ', '.join(enums) + ")"
+
+        default_value: bpy.props.EnumProperty(
+            name="Enum value",
+            description="Enum imported from ZDK",
+            items=items,
+            default=enums[0],
+        )
+
+        # Optional function for drawing the socket input value
+        def draw(self, context, layout, node, text):
+            if self.is_output or self.is_linked:
+                layout.label(text=text)
+            else:
+                layout.prop(self, "default_value", text=text)
+
+        # Socket color
+        def draw_color(self, context, node):
+            return (0.375, 0.75, 1.0, 1.0)
+
+    Def.__name__ = type_id
+
+    register_class(Def)
+    enum_types_cache[type_id] = Def
+    return type_id
+
 
 def eval_type(type):
+    if type.startswith('enum '):
+        return get_enum_socket_type(type)
     type_lut = {
         'int': 'NodeSocketInt',
         'bool': 'NodeSocketBool',
@@ -77,6 +123,7 @@ def eval_category_icon(type):
         'FLIP': 'MATFLUID',
         'cloth': 'MATCLOTH',
         'string': 'FILE_FOLDER',
+        'cgmesh': 'MESH_DATA',
         'numeric': 'PLUS',
         'literal': 'DOT',
         'zenofx': 'PHYSICS',
@@ -95,11 +142,19 @@ def eval_defl(defl, type):
             return str(defl)
         elif type == 'NodeSocketBool':
             return bool(int(defl))
+        elif type.startswith('ZenoNodeSocket_Enum_'):
+            return str(defl)
     except ValueError:
         return None
 
 
 def def_node_class(name, inputs, outputs, category):
+    def prepare_socket_types():
+        for type, name, defl in inputs + outputs:
+            if type.startswith('enum '):
+                get_enum_socket_type(type)
+    prepare_socket_types()
+
     class Def(Node, ZenoTreeNode):
         bl_label = name
         bl_icon = eval_category_icon(category)
@@ -252,12 +307,10 @@ def init_node_classes():
         items = [NodeItem(n) for n in node_names]
         node_categories.append(ZenoNodeCategory(name, name, items=items))
 
-    from nodeitems_utils import register_node_categories
     register_node_categories('ZENO_NODES', node_categories)
 
 
 def deinit_node_classes():
-    from nodeitems_utils import unregister_node_categories
     unregister_node_categories('ZENO_NODES')
 
 
@@ -281,7 +334,6 @@ def init_node_subgraphs():
         items = [make_node_item(n) for n in node_names]
         node_subgraph_categories.append(ZenoNodeCategory(name, name, items=items))
 
-    from nodeitems_utils import register_node_categories
     register_node_categories('ZENO_SUBGRAPH_NODES', node_subgraph_categories)
 
 
@@ -290,7 +342,6 @@ def deinit_node_subgraphs():
         return
     init_node_subgraphs.initialized = False
 
-    from nodeitems_utils import unregister_node_categories
     unregister_node_categories('ZENO_SUBGRAPH_NODES')
 
 
@@ -311,7 +362,6 @@ classes = (
 def register():
     init_node_classes()
 
-    from bpy.utils import register_class
     for cls in node_classes:
         register_class(cls)
     for cls in classes:
@@ -324,7 +374,10 @@ def unregister():
     try: deinit_node_subgraphs()
     except: pass
 
-    from bpy.utils import unregister_class
+    for name, cls in enum_types_cache.values():
+        unregister_class(cls)
+    enum_types_cache.clear()
+
     for cls in reversed(classes):
         unregister_class(cls)
     for cls in reversed(node_classes):

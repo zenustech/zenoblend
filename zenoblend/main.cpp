@@ -192,7 +192,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
     {
         std::map<std::string, size_t> attrNameType;
         auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
-        for (auto const& [key, value] : mesh->attrs) {
+        for (auto const& [key, value] : mesh->vert_attrs) {
             if (key != "pos") {
                 attrNameType.emplace(key, value.index());
             }
@@ -210,7 +210,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
         
         for (int i = 0; i < vertCount; i++) {
-            auto attr = mesh->attrs.at(attrName);
+            auto attr = mesh->vert_attrs.at(attrName);
             size_t attrIndex = attr.index();
             if (attrIndex == 0) {
                 auto vertAttr = reinterpret_cast<blender::float3*>(vertAttrPtr);
@@ -243,7 +243,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto poly = reinterpret_cast<MPoly *>(polyPtr);
         for (int i = 0; i < polyCount; i++) {
-            std::tie(poly[i].loopstart, poly[i].totloop) = mesh->poly[i];
+            poly[i].loopstart = mesh->poly[i].start;
+            poly[i].totloop = mesh->poly[i].len;
             if (mesh->is_smooth)
                 poly[i].flag |= ME_SMOOTH;
         }

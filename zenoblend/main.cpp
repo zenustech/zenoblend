@@ -6,6 +6,7 @@ namespace py = pybind11;
 
 #include <blender/DNA_mesh_types.h>
 #include <blender/DNA_meshdata_types.h>
+#include <blender/blenlib/BLI_float3.hh>
 
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
@@ -13,12 +14,6 @@ namespace py = pybind11;
 PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
-
-namespace Blender {  // blender-master/source/blender/blenlib/BLI_float3.hh
-    struct float3 {
-        float x, y, z;
-    };
-}
 
 PYBIND11_MODULE(pylib_zenoblend, m) {
 
@@ -218,7 +213,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             auto attr = mesh->attrs.at(attrName);
             size_t attrIndex = attr.index();
             if (attrIndex == 0) {
-                auto vertAttr = reinterpret_cast<Blender::float3*>(vertAttrPtr);
+                auto vertAttr = reinterpret_cast<blender::float3*>(vertAttrPtr);
                 auto attrFloat3 = std::get<0>(attr)[i];
                 vertAttr[i].x = attrFloat3[0];
                 vertAttr[i].y = attrFloat3[1];

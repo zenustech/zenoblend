@@ -11,7 +11,7 @@ namespace py = pybind11;
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
 
-//PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
+PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -185,42 +185,40 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
-    //py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
+    py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
 
     m.def("getAttrNameType", []
-    (uintptr_t meshPtr) -> std::map<std::string, size_t>
+        ( uintptr_t meshPtr
+        ) -> std::map<std::string, size_t>
     {
         std::map<std::string, size_t> attrNameType;
-        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         for (auto const& [key, value] : mesh->vert_attrs) {
-            if (key != "pos") {
-                attrNameType.emplace(key, value.index());
-            }
+            attrNameType.emplace(key, value.index());
         }
         return attrNameType;
     });
 
     m.def("meshGetVertAttr", []
-        (uintptr_t meshPtr
+        ( uintptr_t meshPtr
         , std::string attrName
         , uintptr_t vertAttrPtr
         , size_t vertCount
         ) -> void
     {
-        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         
         for (int i = 0; i < vertCount; i++) {
             auto attr = mesh->vert_attrs.at(attrName);
             size_t attrIndex = attr.index();
             if (attrIndex == 0) {
-                auto vertAttr = reinterpret_cast<blender::float3*>(vertAttrPtr);
+                auto vertAttr = reinterpret_cast<blender::float3 *>(vertAttrPtr);
                 auto attrFloat3 = std::get<0>(attr)[i];
                 vertAttr[i].x = attrFloat3[0];
                 vertAttr[i].y = attrFloat3[1];
                 vertAttr[i].z = attrFloat3[2];
-            }
-            else if (attrIndex == 1) {
-                auto vertAttr = reinterpret_cast<MFloatProperty*>(vertAttrPtr);
+            } else if (attrIndex == 1) {
+                auto vertAttr = reinterpret_cast<MFloatProperty *>(vertAttrPtr);
                 vertAttr[i].f = std::get<1>(attr)[i];
             }
         }

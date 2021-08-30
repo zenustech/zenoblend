@@ -49,7 +49,7 @@ class ZenoNodeSocket_Dummy(NodeSocket):
 
 enum_types_cache = {}
 
-def make_enum_socket(enums, defl):
+def get_enum_socket_type(enums):
     type_id = '__'.join(enums)
     if type_id in enum_types_cache:
         return enum_types_cache[type_id}
@@ -66,7 +66,7 @@ def make_enum_socket(enums, defl):
             name="Enum value",
             description="Enum imported from ZDK",
             items=items,
-            default=defl,
+            default=enums[0],
         )
 
         # Optional function for drawing the socket input value
@@ -86,6 +86,9 @@ def make_enum_socket(enums, defl):
 
 
 def eval_type(type):
+    if type.startswith('enum '):
+        enums = type.split()[1:]
+        return get_enum_socket_type(enums)
     type_lut = {
         'int': 'NodeSocketInt',
         'bool': 'NodeSocketBool',
@@ -114,6 +117,7 @@ def eval_category_icon(type):
         'FLIP': 'MATFLUID',
         'cloth': 'MATCLOTH',
         'string': 'FILE_FOLDER',
+        'cgmesh': 'MESH_DATA',
         'numeric': 'PLUS',
         'literal': 'DOT',
         'zenofx': 'PHYSICS',

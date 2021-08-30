@@ -132,23 +132,28 @@ def eval_category_icon(type):
     return type_lut.get(type, 'NODETREE')
 
 
-def eval_defl(defl, type):
+def eval_defl(socket, defl, type):
+    if not defl: return
+    defl_list = defl.split(' ')
+    defl = defl_list[0]
+    minval = defl[1] if len(defl_list) > 1 else None
+    maxval = defl[2] if len(defl_list) > 2 else None
     try:
         if type == 'NodeSocketInt':
-            return int(defl)
+            socket.default_value = int(defl)
         elif type == 'NodeSocketFloat':
-            return float(defl)
+            socket.default_value = float(defl)
         elif type == 'NodeSocketVector':
             x, y, z = defl.split(',')
-            return [float(x), float(y), float(z)]
+            socket.default_value = (float(x), float(y), float(z))
         elif type == 'NodeSocketString':
-            return str(defl)
+            socket.default_value = str(defl)
         elif type == 'NodeSocketBool':
-            return bool(int(defl))
+            socket.default_value = bool(int(defl))
         elif type.startswith('ZenoNodeSocket_Enum_'):
-            return str(defl)
+            socket.default_value = str(defl)
     except ValueError:
-        return None
+        pass
 
 
 def def_node_class(name, inputs, outputs, category):
@@ -174,10 +179,7 @@ def def_node_class(name, inputs, outputs, category):
             for type, name, defl in inputs:
                 type = eval_type(type)
                 socket = self.inputs.new(type, name)
-                if defl:
-                    defl = eval_defl(defl, type)
-                    if defl is not None:
-                        socket.default_value = defl
+                eval_defl(socket, defl, type)
 
             for type, name, defl in outputs:
                 type = eval_type(type)

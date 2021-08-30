@@ -11,7 +11,7 @@ namespace py = pybind11;
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
 
-PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
+//PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -185,7 +185,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
-    py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
+    //py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
 
     m.def("getAttrNameType", []
     (uintptr_t meshPtr) -> std::map<std::string, size_t>

@@ -253,7 +253,6 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> size_t
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
-        printf("fucking %zd\n", mesh->loop.size());
         return mesh->loop.size();
     });
 

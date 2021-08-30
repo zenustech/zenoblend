@@ -1,6 +1,9 @@
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
 from nodeitems_utils import NodeCategory, NodeItem
+from nodeitems_utils import register_node_categories
+from nodeitems_utils import unregister_node_categories
+from bpy.utils import register_class, unregister_class
 
 
 class ZenoNodeTree(NodeTree):
@@ -52,7 +55,7 @@ enum_types_cache = {}
 def get_enum_socket_type(enums):
     type_id = '__'.join(enums)
     if type_id in enum_types_cache:
-        return enum_types_cache[type_id}
+        return enum_types_cache[type_id][0]
 
     items = []
     for key in enums:
@@ -78,11 +81,14 @@ def get_enum_socket_type(enums):
 
         # Socket color
         def draw_color(self, context, node):
-            return (1.0, 0.4, 0.216, 0.5)
+            return (0.375, 0.75, 1.0, 1.0)
 
-    Def.__name__ = 'ZenoNodeSocket_Enum__' + type_id
-    enum_types_cache[type_id] = Def
-    return Def
+    name = 'ZenoNodeSocket_Enum__' + type_id
+    Def.__name__ = name
+
+    register_class(Def)
+    enum_types_cache[type_id] = name, Def
+    return name
 
 
 def eval_type(type):
@@ -136,6 +142,8 @@ def eval_defl(defl, type):
             return str(defl)
         elif type == 'NodeSocketBool':
             return bool(int(defl))
+        elif type.startswith('ZenoNodeSocket_Enum__'):
+            return str(defl)
     except ValueError:
         return None
 
@@ -293,12 +301,10 @@ def init_node_classes():
         items = [NodeItem(n) for n in node_names]
         node_categories.append(ZenoNodeCategory(name, name, items=items))
 
-    from nodeitems_utils import register_node_categories
     register_node_categories('ZENO_NODES', node_categories)
 
 
 def deinit_node_classes():
-    from nodeitems_utils import unregister_node_categories
     unregister_node_categories('ZENO_NODES')
 
 
@@ -322,7 +328,6 @@ def init_node_subgraphs():
         items = [make_node_item(n) for n in node_names]
         node_subgraph_categories.append(ZenoNodeCategory(name, name, items=items))
 
-    from nodeitems_utils import register_node_categories
     register_node_categories('ZENO_SUBGRAPH_NODES', node_subgraph_categories)
 
 
@@ -331,7 +336,6 @@ def deinit_node_subgraphs():
         return
     init_node_subgraphs.initialized = False
 
-    from nodeitems_utils import unregister_node_categories
     unregister_node_categories('ZENO_SUBGRAPH_NODES')
 
 
@@ -352,7 +356,6 @@ classes = (
 def register():
     init_node_classes()
 
-    from bpy.utils import register_class
     for cls in node_classes:
         register_class(cls)
     for cls in classes:
@@ -365,7 +368,10 @@ def unregister():
     try: deinit_node_subgraphs()
     except: pass
 
-    from bpy.utils import unregister_class
+    for name, cls in enum_types_cache.values():
+        unregister_class(cls)
+    enum_types_cache.clear()
+
     for cls in reversed(classes):
         unregister_class(cls)
     for cls in reversed(node_classes):

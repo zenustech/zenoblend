@@ -47,6 +47,43 @@ class ZenoNodeSocket_Dummy(NodeSocket):
         return (0.4, 0.4, 0.4, 1.0)
 
 
+enum_types_cache = {}
+
+def make_enum_socket(enums, defl):
+    type_id = '__'.join(enums)
+    if type_id in enum_types_cache:
+        return enum_types_cache[type_id}
+
+    items = []
+    for key in enums:
+        items.append((key, key, key))
+
+    class Def(NodeSocket):
+        '''Zeno node enum socket type'''
+        bl_label = "Zeno Node Socket Enum (" + ', '.join(enums) + ")"
+
+        default_value: bpy.props.EnumProperty(
+            name="Enum value",
+            description="Enum imported from ZDK",
+            items=items,
+            default=defl,
+        )
+
+        # Optional function for drawing the socket input value
+        def draw(self, context, layout, node, text):
+            if self.is_output or self.is_linked:
+                layout.label(text=text)
+            else:
+                layout.prop(self, "default_value", text=text)
+
+        # Socket color
+        def draw_color(self, context, node):
+            return (1.0, 0.4, 0.216, 0.5)
+
+    Def.__name__ = 'ZenoNodeSocket_Enum__' + type_id
+    enum_types_cache[type_id] = Def
+    return Def
+
 
 def eval_type(type):
     type_lut = {

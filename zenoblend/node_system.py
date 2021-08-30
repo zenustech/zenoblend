@@ -53,7 +53,7 @@ class ZenoNodeSocket_Dummy(NodeSocket):
 enum_types_cache = {}
 
 def get_enum_socket_type(enums):
-    type_id = '__'.join(enums)
+    type_id = hex(abs(hash('__'.join(enums))))[2:]
     if type_id in enum_types_cache:
         return enum_types_cache[type_id][0]
 
@@ -83,7 +83,7 @@ def get_enum_socket_type(enums):
         def draw_color(self, context, node):
             return (0.375, 0.75, 1.0, 1.0)
 
-    name = 'ZenoNodeSocket_Enum__' + type_id
+    name = 'ZenoNodeSocket_Enum_' + type_id
     Def.__name__ = name
 
     register_class(Def)
@@ -92,9 +92,8 @@ def get_enum_socket_type(enums):
 
 
 def eval_type(type):
-    if type.startswith('enum '):
-        enums = type.split()[1:]
-        return get_enum_socket_type(enums)
+    if type.startswith('ZenoNodeSocket_Enum_'):
+        return type
     type_lut = {
         'int': 'NodeSocketInt',
         'bool': 'NodeSocketBool',
@@ -142,13 +141,18 @@ def eval_defl(defl, type):
             return str(defl)
         elif type == 'NodeSocketBool':
             return bool(int(defl))
-        elif type.startswith('ZenoNodeSocket_Enum__'):
+        elif type.startswith('ZenoNodeSocket_Enum_'):
             return str(defl)
     except ValueError:
         return None
 
 
 def def_node_class(name, inputs, outputs, category):
+    for type, name, defl in inputs:
+        if type.startswith('enum '):
+            enums = type.split()[1:]
+            type = get_enum_socket_type(enums)
+
     class Def(Node, ZenoTreeNode):
         bl_label = name
         bl_icon = eval_category_icon(category)

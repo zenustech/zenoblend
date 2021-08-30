@@ -152,8 +152,7 @@ def def_node_class(name, inputs, outputs, category):
     def prepare_socket_types():
         for type, name, defl in inputs + outputs:
             if type.startswith('enum '):
-                newid = get_enum_socket_type(type)
-                print('!!!! preparing', type, newid)
+                get_enum_socket_type(type)
     prepare_socket_types()
 
     class Def(Node, ZenoTreeNode):

@@ -99,6 +99,7 @@ def eval_type(type):
         'int': 'NodeSocketInt',
         'bool': 'NodeSocketBool',
         'float': 'NodeSocketFloat',
+        'NumericObject': 'NodeSocketFloat',
         'vec3f': 'NodeSocketVector',
         'color3f': 'NodeSocketColor',
         'string': 'NodeSocketString',

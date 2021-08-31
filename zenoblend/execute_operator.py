@@ -176,12 +176,22 @@ def find_tree_sub_io_names(tree):
     return inputs, outputs
 
 
+eval_bpy_data = {
+    'texts': lambda data: data.as_string()  # possibly support more bpy datablocks, like objects, images, textures
+}
+
 def dump_tree(tree):
     assert tree.bl_idname == 'ZenoNodeTree', tree
     for node_name, node in tree.nodes.items():
         if not hasattr(node, 'zeno_type'): continue
         node_type = node.zeno_type
         yield ('addNode', node_type, node_name)
+        if hasattr(node, 'bpy_data_inputs'):
+            for bpy_data_input in node.bpy_data_inputs:
+                input_name = bpy_data_input['name']
+                data_type = bpy_data_input['type']
+                value = eval_bpy_data[data_type](getattr(bpy.data, data_type)[getattr(node, input_name)])
+                yield ('setNodeInput', node_name, input_name, value)
         for input_name, input in node.inputs.items():
             if input.is_linked:
                 assert len(input.links) == 1

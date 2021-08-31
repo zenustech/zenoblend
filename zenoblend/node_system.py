@@ -265,12 +265,22 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-class ZenoNode_MakeText(def_node_class('MakeText', [], [], 'string')):
+def text_str_callback(self, context):
+    name = self.bpy_data_inputs['name']
+    text_str = bpy.data.texts[name].as_string() if self.text_name else ''
+    print("update", text_str)
+
+class ZenoNode_MakeText(def_node_class('MakeText', [], [('NodeSocketString','value','')], 'string')):
     '''Zeno specialized MakeText node'''
+    text: bpy.props.StringProperty()
+
+    bpy_data_inputs = [
+        {'type': 'texts',
+        'name': 'text'}]  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically 
 
     def draw_buttons(self, context, layout):
         row = layout.row()
-        row.prop_search(self, 'text_name', bpy.data, 'texts', text='', icon='TEXT')
+        row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 
 def get_descriptors():
@@ -387,7 +397,7 @@ def unregister():
     try: deinit_node_subgraphs()
     except: pass
 
-    for name, cls in enum_types_cache.values():
+    for name, cls in enum_types_cache.items():
         unregister_class(cls)
     enum_types_cache.clear()
 

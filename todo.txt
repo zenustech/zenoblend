@@ -1,0 +1,2 @@
+support input attrs too
+fix dianchenan: immed socket default value make has_input notwork

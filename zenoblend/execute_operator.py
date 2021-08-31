@@ -192,6 +192,8 @@ def dump_tree(tree):
                         src_node_name, src_socket_name)
             elif hasattr(input, 'default_value'):
                 value = input.default_value
+                if type(value).__name__ in ['bpy_prop_array', 'Vector']:
+                    value = tuple(value)
                 yield ('setNodeInput', node_name, input_name, value)
         if node.zeno_type == 'Subgraph':
             yield ('setNodeInput', node_name, 'name:', node.graph_name)

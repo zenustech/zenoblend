@@ -1,24 +1,19 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
+//#include <pybind11/stl_bind.h>
 namespace py = pybind11;
 
 #include <blender/DNA_mesh_types.h>
 #include <blender/DNA_meshdata_types.h>
+#include <blender/blenlib/BLI_float3.hh>
 
 #include <zeno/zeno.h>
 #include <zeno/types/BlenderMesh.h>
 
-PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
+//PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
-
-namespace Blender {  // blender-master/source/blender/blenlib/BLI_float3.hh
-    struct float3 {
-        float x, y, z;
-    };
-}
 
 PYBIND11_MODULE(pylib_zenoblend, m) {
 
@@ -190,42 +185,40 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
-    py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
+    //py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
 
     m.def("getAttrNameType", []
-    (uintptr_t meshPtr) -> std::map<std::string, size_t>
+        ( uintptr_t meshPtr
+        ) -> std::map<std::string, size_t>
     {
         std::map<std::string, size_t> attrNameType;
-        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
-        for (auto const& [key, value] : mesh->attrs) {
-            if (key != "pos") {
-                attrNameType.emplace(key, value.index());
-            }
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        for (auto const& [key, value] : mesh->vert_attrs) {
+            attrNameType.emplace(key, value.index());
         }
         return attrNameType;
     });
 
     m.def("meshGetVertAttr", []
-        (uintptr_t meshPtr
+        ( uintptr_t meshPtr
         , std::string attrName
         , uintptr_t vertAttrPtr
         , size_t vertCount
         ) -> void
     {
-        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         
         for (int i = 0; i < vertCount; i++) {
             auto attr = mesh->vert_attrs.at(attrName);
             size_t attrIndex = attr.index();
             if (attrIndex == 0) {
-                auto vertAttr = reinterpret_cast<Blender::float3*>(vertAttrPtr);
+                auto vertAttr = reinterpret_cast<blender::float3 *>(vertAttrPtr);
                 auto attrFloat3 = std::get<0>(attr)[i];
                 vertAttr[i].x = attrFloat3[0];
                 vertAttr[i].y = attrFloat3[1];
                 vertAttr[i].z = attrFloat3[2];
-            }
-            else if (attrIndex == 1) {
-                auto vertAttr = reinterpret_cast<MFloatProperty*>(vertAttrPtr);
+            } else if (attrIndex == 1) {
+                auto vertAttr = reinterpret_cast<MFloatProperty *>(vertAttrPtr);
                 vertAttr[i].f = std::get<1>(attr)[i];
             }
         }
@@ -248,7 +241,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto poly = reinterpret_cast<MPoly *>(polyPtr);
         for (int i = 0; i < polyCount; i++) {
-            std::tie(poly[i].loopstart, poly[i].totloop) = mesh->poly[i];
+            poly[i].loopstart = mesh->poly[i].start;
+            poly[i].totloop = mesh->poly[i].len;
             if (mesh->is_smooth)
                 poly[i].flag |= ME_SMOOTH;
         }

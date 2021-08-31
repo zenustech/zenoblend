@@ -83,7 +83,7 @@ def meshToBlender(meshPtr, mesh):
 
     for attrName, attrType in core.getAttrNameType(meshPtr).items():
         if attrName not in mesh.attributes:
-            attrType = 'FLOAT' if attrType == 1 else 'FLOAT_VECTOR'
+            attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
             mesh.attributes.new(type=attrType, domain='POINT', name=attrName)
         vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer() if vertCount else 0
         core.meshGetVertAttr(meshPtr, attrName, vertAttrPtr, vertCount)

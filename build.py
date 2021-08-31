@@ -24,6 +24,7 @@ ap.add_argument('--with-cuda', action='store_true')
 ap.add_argument('--with-bullet', action='store_true')
 ap.add_argument('--with-cgal', action='store_true')
 ap.add_argument('--cmake-args', default='')
+ap.add_argument('--parallel', default='auto')
 
 ap = ap.parse_args()
 
@@ -38,6 +39,15 @@ build_args = []
 
 if sys.platform == 'win32':
     build_args.extend(['--config', ap.config])
+
+if ap.parallel:
+    if ap.parallel == 'max':
+        build_args.extend(['--parallel'])
+    if ap.parallel == 'auto':
+        from multiprocessing import cpu_count
+        build_args.extend(['--parallel', str(cpu_count())])
+    else:
+        build_args.extend(['--parallel', ap.parallel])
 
 args.append('-DPYTHON_EXECUTABLE=' + sys.executable)
 
@@ -77,7 +87,7 @@ if ap.toolchain:
 if ap.cmake_args:
     args.extend(ap.cmake_args.split(','))
 
-print('*** cmake arguments:', args)
+print('*** config arguments:', args)
 subprocess.check_call(['cmake', '-B', 'build'] + args)
-print('*** now building project...')
-subprocess.check_call(['cmake', '--build', 'build', '--parallel'] + build_args)
+print('*** build arguments:', build_args)
+subprocess.check_call(['cmake', '--build', 'build'] + build_args)

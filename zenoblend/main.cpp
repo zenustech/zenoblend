@@ -215,7 +215,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
         
         for (int i = 0; i < vertCount; i++) {
-            auto attr = mesh->attrs.at(attrName);
+            auto attr = mesh->vert_attrs.at(attrName);
             size_t attrIndex = attr.index();
             if (attrIndex == 0) {
                 auto vertAttr = reinterpret_cast<Blender::float3*>(vertAttrPtr);

@@ -265,11 +265,6 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-def text_str_callback(self, context):
-    name = self.bpy_data_inputs['name']
-    text_str = bpy.data.texts[name].as_string() if self.text_name else ''
-    print("update", text_str)
-
 class ZenoNode_MakeText(def_node_class('MakeText', [], [('NodeSocketString','value','')], 'string')):
     '''Zeno specialized MakeText node'''
     text: bpy.props.StringProperty()

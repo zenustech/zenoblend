@@ -392,7 +392,7 @@ def unregister():
     try: deinit_node_subgraphs()
     except: pass
 
-    for name, cls in enum_types_cache.items():
+    for cls in enum_types_cache.values():
         unregister_class(cls)
     enum_types_cache.clear()
 

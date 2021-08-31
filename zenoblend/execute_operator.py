@@ -191,7 +191,7 @@ def dump_tree(tree):
                 input_name = bpy_data_input['name']
                 data_type = bpy_data_input['type']
                 value = eval_bpy_data[data_type](getattr(bpy.data, data_type)[getattr(node, input_name)])
-                yield ('setNodeInput', node_name, input_name, value)
+                yield ('setNodeInput', node_name, input_name + ':', value)
         for input_name, input in node.inputs.items():
             if input.is_linked:
                 assert len(input.links) == 1

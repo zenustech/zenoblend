@@ -276,7 +276,7 @@ class ZenoNode_MakeText(def_node_class('MakeText', [], [('NodeSocketString','val
 
     bpy_data_inputs = [
         {'type': 'texts',
-        'name': 'text'}]  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically 
+        'name': 'text'}]  # parameter name 'text:' is temporarily hardcoded, possibly get processed automatically 
 
     def draw_buttons(self, context, layout):
         row = layout.row()

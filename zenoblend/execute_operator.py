@@ -192,7 +192,7 @@ def dump_tree(tree):
             for input_name, data_type in node.bpy_data_inputs.items():
                 data = getattr(bpy.data, data_type)[getattr(node, input_name)]
                 value = eval_bpy_data[data_type](data)
-                yield ('setNodeInput', node_name, input_name + ':', value)
+                yield ('setNodeInput', node_name, input_name, value)
 
         for input_name, input in node.inputs.items():
             if input.is_linked:

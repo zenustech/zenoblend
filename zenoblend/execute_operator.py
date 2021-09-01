@@ -192,7 +192,12 @@ def dump_tree(tree):
         # thank @hooyuser for contribute!
         if hasattr(node, 'bpy_data_inputs'):
             for input_name, data_type in node.bpy_data_inputs.items():
-                data = getattr(bpy.data, data_type)[getattr(node, input_name)]
+                data_blocks = getattr(bpy.data, data_type)
+                data_block_name = getattr(node, input_name)
+                if data_block_name not in data_blocks:
+                    print('WARNING: object named `{}` not exist!')
+                    continue
+                data = data_blocks[data_block_name]
                 value = eval_bpy_data[data_type](data)
                 yield ('setNodeInput', node_name, input_name, value)
 

@@ -194,7 +194,10 @@ def def_node_class(name, inputs, outputs, category):
             defls = {}
             for name, socket in self.inputs.items():
                 if hasattr(socket, 'default_value'):
-                    defls[name] = type(socket), socket.default_value
+                    value = socket.default_value
+                    if type(value).__name__ in ['bpy_prop_array', 'Vector']:
+                        value = tuple(value)
+                    defls[name] = type(socket), value
                 for link in socket.links:
                     links.append((
                         link.from_node, link.from_socket.name,
@@ -287,7 +290,7 @@ class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT')
 
 
-class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', '')], [], 'blender')):
+class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', ''), ('bool', 'active:', '1')], [], 'blender')):
     '''Zeno specialized BlenderOutput node'''
     objid: bpy.props.StringProperty()
 
@@ -295,7 +298,7 @@ class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'o
 
     def draw_buttons(self, context, layout):
         row = layout.row()
-        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT')
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
         row.operator("node.zeno_stop", text="Stop")

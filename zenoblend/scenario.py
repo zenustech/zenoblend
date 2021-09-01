@@ -171,7 +171,7 @@ def graph_deal_input(graphPtr, inputName):
 
 def graph_deal_output(graphPtr, outputName, is_framed):
     if outputName not in bpy.data.objects:
-        print('WARNING: object {} not exist, creating now'.format(outputName))
+        print('WARNING: object `{}` not exist, creating now'.format(outputName))
         blenderMesh = bpy.data.meshes.new(outputName)
         blenderObj = bpy.data.objects.new(outputName, blenderMesh)
         bpy.context.collection.objects.link(blenderObj)

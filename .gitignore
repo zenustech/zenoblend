@@ -1,11 +1,52 @@
-build/
-__pycache__/
+# python files
+__pycache__
+*.egg-info
+dist
+
+# cmake files
+build
+cmake-build-*
+
+# binary files
+*.zpm
+*.exe
 *.a
+*.la
 *.so
-*.pyd
 *.dll
+*.lib
 *.dylib
-/zenoblend/bin/
-/dist
-/.vs
-/CMakeSettings.json
+*.pyd
+a.out
+
+# output files
+/zenoblend/bin
+outputs
+
+# vim files
+.*.swp
+.*.un~
+tags
+*~
+
+# ide files
+.vs
+.idea
+.vscode
+.cache
+.run
+*.pdb
+*.ilk
+*.manifest
+*.exp
+CMakeSettings.json
+
+# archibate files
+/a.h
+/a.json
+/a.zsl
+/a.zsg
+/b.zsg
+
+# zhxx files
+assets/smoke

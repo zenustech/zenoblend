@@ -178,6 +178,7 @@ def find_tree_sub_io_names(tree):
 
 eval_bpy_data = {
     'texts': lambda data: data.as_string()  # possibly support more bpy datablocks, like objects, images, textures
+    'objects': lambda data: data.name
 }
 
 def dump_tree(tree):

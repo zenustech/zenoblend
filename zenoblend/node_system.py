@@ -276,6 +276,31 @@ class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value'
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 
+class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 'object', '')], 'blender')):
+    '''Zeno specialized BlenderInput node'''
+    text: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT')
+
+
+class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', '')], [], 'blender')):
+    '''Zeno specialized BlenderOutput node'''
+    text: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT')
+        row = layout.row()
+        row.operator("node.zeno_apply", text="Apply")
+        row.operator("node.zeno_stop", text="Stop")
+
+
 def get_descriptors():
     node_descriptors = []
     from .dll import core

@@ -25,6 +25,12 @@ ZENDEFNODE(BlenderText, {
 
 
 struct BlenderInput : zeno::INode {
+    virtual void complete() override {
+        auto &inputNames = graph->getUserData().get<zeno::BlenderInputNamesType>("blender_input_names");
+        auto objid = get_input2<std::string>("objid");
+        inputNames.insert(objid);
+    }
+
     virtual void apply() override {
         auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
         auto objid = get_input2<std::string>("objid");

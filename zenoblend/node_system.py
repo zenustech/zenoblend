@@ -281,13 +281,13 @@ class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value'
 
 class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 'object', '')], 'blender')):
     '''Zeno specialized BlenderInput node'''
-    text: bpy.props.StringProperty()
+    objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
 
     def draw_buttons(self, context, layout):
         row = layout.row()
-        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT')
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
 class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', ''), ('bool', 'active:', '1')], [], 'blender')):

@@ -104,16 +104,14 @@ struct PrimitiveToBMesh : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto mesh = std::make_shared<zeno::BlenderMesh>();
         bool is_smooth = get_param<bool>("is_smooth");
-        // todo: matrix too?
+        // todo: support matrix too?
 
         mesh->vert.resize(prim->size());
         auto &pos = prim->attr<zeno::vec3f>("pos");
         for (int i = 0; i < prim->size(); i++) {
             mesh->vert[i] = pos[i];
         }
-
-        prim->foreach_attr([&] (auto const &key, auto const &attr) {
-            if (key == "pos") return; // already in mesh->vert..
+        prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
             mesh->vert.attrs[key] = attr;  // deep copy
         });
 
@@ -127,6 +125,10 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->loop[i*3 + 2] = e[2];
             mesh->poly[i] = {i*3, 3};
         }
+        prim->loops.foreach_attr([&] (auto const &key, auto const &attr) {
+            mesh->loop.attrs[key] = attr;  // deep copy
+        });
+
         int base = prim->tris.size() * 3;
         int base_poly = prim->tris.size();
         for (int i = 0; i < prim->quads.size(); i++) {
@@ -137,6 +139,9 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->loop[base + i*4 + 3] = e[3];
             mesh->poly[base_poly + i] = {base + i*4, 4};
         }
+        prim->polys.foreach_attr([&] (auto const &key, auto const &attr) {
+            mesh->poly.attrs[key] = attr;  // deep copy
+        });
 
         set_output("mesh", std::move(mesh));
     }

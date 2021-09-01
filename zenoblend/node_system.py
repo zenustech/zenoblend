@@ -265,7 +265,7 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-class ZenoNode_BlenderText(def_node_class('BlenderText', [], [], 'blender')):
+class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
     '''Zeno specialized BlenderText node'''
     text: bpy.props.StringProperty()
 

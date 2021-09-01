@@ -265,13 +265,11 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-class ZenoNode_MakeText(def_node_class('MakeText', [], [('NodeSocketString','value','')], 'string')):
-    '''Zeno specialized MakeText node'''
+class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
+    '''Zeno specialized BlenderText node'''
     text: bpy.props.StringProperty()
 
-    bpy_data_inputs = [
-        {'type': 'texts',
-        'name': 'text'}]  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically 
+    bpy_data_inputs = {'text': 'texts'}  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically
 
     def draw_buttons(self, context, layout):
         row = layout.row()

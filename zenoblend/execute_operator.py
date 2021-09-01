@@ -186,12 +186,14 @@ def dump_tree(tree):
         if not hasattr(node, 'zeno_type'): continue
         node_type = node.zeno_type
         yield ('addNode', node_type, node_name)
+
+        # thank @hooyuser for contribute!
         if hasattr(node, 'bpy_data_inputs'):
-            for bpy_data_input in node.bpy_data_inputs:
-                input_name = bpy_data_input['name']
-                data_type = bpy_data_input['type']
-                value = eval_bpy_data[data_type](getattr(bpy.data, data_type)[getattr(node, input_name)])
+            for input_name, data_type in node.bpy_data_inputs.items():
+                data = getattr(bpy.data, data_type)[getattr(node, input_name)]
+                value = eval_bpy_data[data_type](data)
                 yield ('setNodeInput', node_name, input_name + ':', value)
+
         for input_name, input in node.inputs.items():
             if input.is_linked:
                 assert len(input.links) == 1
@@ -205,6 +207,7 @@ def dump_tree(tree):
                 if type(value).__name__ in ['bpy_prop_array', 'Vector']:
                     value = tuple(value)
                 yield ('setNodeInput', node_name, input_name, value)
+
         if node.zeno_type == 'Subgraph':
             yield ('setNodeInput', node_name, 'name:', node.graph_name)
         yield ('completeNode', node_name)

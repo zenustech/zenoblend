@@ -1,5 +1,5 @@
 #include <zeno/zeno.h>
-#include <zeno/types/BlenderMesh.h>
+#include "BlenderMesh.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 

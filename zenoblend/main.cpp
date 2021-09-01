@@ -9,7 +9,7 @@ namespace py = pybind11;
 #include <blender/blenlib/BLI_float3.hh>
 
 #include <zeno/zeno.h>
-#include <zeno/types/BlenderMesh.h>
+#include "BlenderMesh.h"
 
 //PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 

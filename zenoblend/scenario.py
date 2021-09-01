@@ -88,9 +88,11 @@ def meshToBlender(meshPtr, mesh):
         elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'POINT':
             mesh.attributes.remove(mesh.attributes[attrName])
             mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
+        print(mes)
 
-        vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer() if vertCount else 0
-        core.meshGetVertAttr(meshPtr, attrName, vertAttrPtr, vertCount)
+        if vertCount:
+            vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
+            core.meshGetVertAttr(meshPtr, attrName, vertAttrPtr, vertCount)
 
     loopCount = core.meshGetLoopsCount(meshPtr)
     mesh.loops.add(loopCount)
@@ -112,8 +114,9 @@ def meshToBlender(meshPtr, mesh):
             mesh.attributes.remove(mesh.attributes[attrName])
             mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
 
-        polyAttrPtr = mesh.attributes[attrName].data[0].as_pointer() if polyCount else 0
-        core.meshGetPolyAttr(meshPtr, attrName, polyAttrPtr, polyCount)
+        if polyCount:
+            polyAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
+            core.meshGetPolyAttr(meshPtr, attrName, polyAttrPtr, polyCount)
 
     mesh.update()
 

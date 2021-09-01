@@ -73,7 +73,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto &inputNames = graph->getUserData().get<zeno::BlenderInputsType>("blender_input_names");
+        auto &inputNames = graph->getUserData().get<zeno::BlenderInputNamesType>("blender_input_names");
         return inputNames;
     });
 

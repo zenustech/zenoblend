@@ -113,6 +113,7 @@ lastJsonStr = None
 
 
 def load_scene(jsonStr):
+    print(time.strftime('[%H:%M:%S]'), 'load_scene')
     global sceneId
     global lastJsonStr
     delete_scene()
@@ -204,6 +205,7 @@ def execute_scene(graph_name, is_framed):
 
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr)
+    print('graph inputs:', inputNames)
     for inputName in inputNames:
         cb = graph_deal_input(graphPtr, inputName)
         prepareCallbacks.append(cb)
@@ -211,6 +213,7 @@ def execute_scene(graph_name, is_framed):
     core.graphApply(graphPtr)
 
     outputNames = core.graphGetOutputNames(graphPtr)
+    print('graph outputs:', outputNames)
     for outputName in outputNames:
         graph_deal_output(graphPtr, outputName, is_framed)
 

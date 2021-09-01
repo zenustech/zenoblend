@@ -125,22 +125,30 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->loop[i*3 + 2] = e[2];
             mesh->poly[i] = {i*3, 3};
         }
-        prim->loops.foreach_attr([&] (auto const &key, auto const &attr) {
-            mesh->loop.attrs[key] = attr;  // deep copy
+        prim->tris.foreach_attr([&] (auto const &key, auto const &attr) {
+            using T = std::decay_t<decltype(attr[0])>;
+            auto &arr = mesh->poly.add_attr<T>(key);
+            for (int i = 0; i < prim->tris.size(); i++) {
+                arr[i] = attr[i];
+            }
         });
 
-        int base = prim->tris.size() * 3;
+        int base_loop = prim->tris.size() * 3;
         int base_poly = prim->tris.size();
         for (int i = 0; i < prim->quads.size(); i++) {
             auto e = prim->quads[i];
-            mesh->loop[base + i*4 + 0] = e[0];
-            mesh->loop[base + i*4 + 1] = e[1];
-            mesh->loop[base + i*4 + 2] = e[2];
-            mesh->loop[base + i*4 + 3] = e[3];
-            mesh->poly[base_poly + i] = {base + i*4, 4};
+            mesh->loop[base_loop + i*4 + 0] = e[0];
+            mesh->loop[base_loop + i*4 + 1] = e[1];
+            mesh->loop[base_loop + i*4 + 2] = e[2];
+            mesh->loop[base_loop + i*4 + 3] = e[3];
+            mesh->poly[base_poly + i] = {base_loop + i*4, 4};
         }
-        prim->polys.foreach_attr([&] (auto const &key, auto const &attr) {
-            mesh->poly.attrs[key] = attr;  // deep copy
+        prim->quads.foreach_attr([&] (auto const &key, auto const &attr) {
+            using T = std::decay_t<decltype(attr[0])>;
+            auto &arr = mesh->poly.add_attr<T>(key);
+            for (int i = 0; i < prim->tris.size(); i++) {
+                arr[base_poly + i] = attr[i];
+            }
         });
 
         set_output("mesh", std::move(mesh));

@@ -81,13 +81,13 @@ def meshToBlender(meshPtr, mesh):
     vertPtr = mesh.vertices[0].as_pointer() if vertCount else 0
     core.meshGetVertices(meshPtr, vertPtr, vertCount)
 
-    for attrName, attrType in core.getAttrNameType(meshPtr).items():
+    for attrName, attrType in core.meshGetVertAttrNameType(meshPtr).items():
         attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
         if attrName not in mesh.attributes:
-            mesh.attributes.new(type=attrType, domain='POINT', name=attrName)
-        elif mesh.attributes[attrName].data_type != attrType:
+            mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
+        elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'POINT':
             mesh.attributes.remove(mesh.attributes[attrName])
-            mesh.attributes.new(type=attrType, domain='POINT', name=attrName)
+            mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
 
         vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer() if vertCount else 0
         core.meshGetVertAttr(meshPtr, attrName, vertAttrPtr, vertCount)
@@ -103,6 +103,17 @@ def meshToBlender(meshPtr, mesh):
     assert polyCount == len(mesh.polygons), (polyCount, len(mesh.polygons))
     polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
     core.meshGetPolygons(meshPtr, polyPtr, polyCount)
+
+    for attrName, attrType in core.meshGetPolyAttrNameType(meshPtr).items():
+        attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
+        if attrName not in mesh.attributes:
+            mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
+        elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'FACE':
+            mesh.attributes.remove(mesh.attributes[attrName])
+            mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
+
+        polyAttrPtr = mesh.attributes[attrName].data[0].as_pointer() if polyCount else 0
+        core.meshGetPolyAttr(meshPtr, attrName, polyAttrPtr, polyCount)
 
     mesh.update()
 

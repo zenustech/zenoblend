@@ -1,7 +1,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-//#include <pybind11/stl_bind.h>
 namespace py = pybind11;
 
 #include <blender/DNA_mesh_types.h>
@@ -10,8 +9,6 @@ namespace py = pybind11;
 
 #include <zeno/zeno.h>
 #include "BlenderMesh.h"
-
-//PYBIND11_MAKE_OPAQUE(std::map<std::string, size_t>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -196,9 +193,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
-    //py::bind_map<std::map<std::string, size_t>>(m, "MapAttrNameType");
-
-    m.def("getAttrNameType", []
+    m.def("meshGetVertAttrNameType", []
         ( uintptr_t meshPtr
         ) -> std::map<std::string, size_t>
     {
@@ -231,6 +226,43 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             } else if (attrIndex == 1) {
                 auto vertAttr = reinterpret_cast<MFloatProperty *>(vertAttrPtr);
                 vertAttr[i].f = std::get<1>(attr)[i];
+            }
+        }
+    });
+
+    m.def("meshGetPolyAttrNameType", []
+        ( uintptr_t meshPtr
+        ) -> std::map<std::string, size_t>
+    {
+        std::map<std::string, size_t> attrNameType;
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        for (auto const& [key, value] : mesh->poly.attrs) {
+            attrNameType.emplace(key, value.index());
+        }
+        return attrNameType;
+    });
+
+    m.def("meshGetPolyAttr", []
+        ( uintptr_t meshPtr
+        , std::string attrName
+        , uintptr_t polyAttrPtr
+        , size_t polyCount
+        ) -> void
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        
+        for (int i = 0; i < polyCount; i++) {
+            auto attr = mesh->poly.attrs.at(attrName);
+            size_t attrIndex = attr.index();
+            if (attrIndex == 0) {
+                auto polyAttr = reinterpret_cast<blender::float3 *>(polyAttrPtr);
+                auto attrFloat3 = std::get<0>(attr)[i];
+                polyAttr[i].x = attrFloat3[0];
+                polyAttr[i].y = attrFloat3[1];
+                polyAttr[i].z = attrFloat3[2];
+            } else if (attrIndex == 1) {
+                auto polyAttr = reinterpret_cast<MFloatProperty *>(polyAttrPtr);
+                polyAttr[i].f = std::get<1>(attr)[i];
             }
         }
     });

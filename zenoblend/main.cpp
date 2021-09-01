@@ -313,4 +313,13 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
+    py::register_exception_translator([](std::exception_ptr p) {
+        try {
+            //printf("[pybind11 exception translator called]\n");
+            if (p)
+                std::rethrow_exception(p);
+        } catch (zeno::BaseException const &e) {
+            PyErr_SetString(PyExc_RuntimeError, e.what());
+        }
+    });
 }

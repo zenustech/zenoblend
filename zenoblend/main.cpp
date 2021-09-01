@@ -73,7 +73,12 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        return graph->getGraphInputNames();
+        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+        std::set<std::string> keys;
+        for (auto const &[key, val]: inputs) {
+            keys.insert(key);
+        }
+        return keys;
     });
 
     m.def("graphGetOutputNames", []
@@ -81,7 +86,12 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        return graph->getGraphOutputNames();
+        auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
+        std::set<std::string> keys;
+        for (auto const &[key, val]: outputs) {
+            keys.insert(key);
+        }
+        return keys;
     });
 
     m.def("graphApply", []
@@ -94,21 +104,23 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
 
     m.def("graphSetInputAxis", []
             ( uintptr_t graphPtr
-            , std::string endpName
+            , std::string objName
             , std::array<std::array<float, 4>, 4> matrix
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        graph->setGraphInputPromise(endpName, [=] () -> zeno::zany {
+        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+
+        inputs[objName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
             auto axis = std::make_shared<zeno::BlenderAxis>();
             axis->matrix = matrix;
             return axis;
-        });
+        };
     });
 
     m.def("graphSetInputMesh", []
             ( uintptr_t graphPtr
-            , std::string endpName
+            , std::string objName
             , std::array<std::array<float, 4>, 4> matrix
             , uintptr_t vertPtr
             , size_t vertCount
@@ -119,7 +131,9 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        graph->setGraphInputPromise(endpName, [=] () -> zeno::zany {
+        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+
+        inputs[objName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
             auto mesh = std::make_shared<zeno::BlenderMesh>();
             mesh->matrix = matrix;
             mesh->vert.resize(vertCount);
@@ -138,18 +152,19 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
                 mesh->poly[i] = {poly[i].loopstart, poly[i].totloop};
             }
             return mesh;
-        });
+        };
     });
     // todo: support input/output volume too
 
     m.def("graphGetOutputMesh", []
             ( uintptr_t graphPtr
-            , std::string const &endpName
+            , std::string const &objName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto meshAny = graph->getGraphOutput2(endpName);
-        auto mesh = zeno::smart_any_cast<std::shared_ptr<zeno::BlenderMesh>>(meshAny);
+        auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
+
+        auto const &mesh = outputs.at(objName);
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;
     });

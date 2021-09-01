@@ -289,7 +289,7 @@ class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 
 
 class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', '')], [], 'blender')):
     '''Zeno specialized BlenderOutput node'''
-    text: bpy.props.StringProperty()
+    objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
 

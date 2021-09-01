@@ -176,12 +176,31 @@ def find_tree_sub_io_names(tree):
     return inputs, outputs
 
 
+eval_bpy_data = {
+    # possibly support more bpy datablocks, like objects, images, textures
+    'texts': lambda data: data.as_string(),
+    'objects': lambda data: data.name,
+}
+
 def dump_tree(tree):
     assert tree.bl_idname == 'ZenoNodeTree', tree
     for node_name, node in tree.nodes.items():
         if not hasattr(node, 'zeno_type'): continue
         node_type = node.zeno_type
         yield ('addNode', node_type, node_name)
+
+        # thank @hooyuser for contribute!
+        if hasattr(node, 'bpy_data_inputs'):
+            for input_name, data_type in node.bpy_data_inputs.items():
+                data_blocks = getattr(bpy.data, data_type)
+                data_block_name = getattr(node, input_name)
+                if data_block_name not in data_blocks:
+                    print('WARNING: object named `{}` not exist!')
+                    continue
+                data = data_blocks[data_block_name]
+                value = eval_bpy_data[data_type](data)
+                yield ('setNodeInput', node_name, input_name, value)
+
         for input_name, input in node.inputs.items():
             if input.is_linked:
                 assert len(input.links) == 1
@@ -195,6 +214,7 @@ def dump_tree(tree):
                 if type(value).__name__ in ['bpy_prop_array', 'Vector']:
                     value = tuple(value)
                 yield ('setNodeInput', node_name, input_name, value)
+
         if node.zeno_type == 'Subgraph':
             yield ('setNodeInput', node_name, 'name:', node.graph_name)
         yield ('completeNode', node_name)

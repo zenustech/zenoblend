@@ -82,9 +82,13 @@ def meshToBlender(meshPtr, mesh):
     core.meshGetVertices(meshPtr, vertPtr, vertCount)
 
     for attrName, attrType in core.getAttrNameType(meshPtr).items():
+        attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
         if attrName not in mesh.attributes:
-            attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
             mesh.attributes.new(type=attrType, domain='POINT', name=attrName)
+        elif mesh.attributes[attrName].data_type != attrType:
+            mesh.attributes.remove(mesh.attributes[attrName])
+            mesh.attributes.new(type=attrType, domain='POINT', name=attrName)
+
         vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer() if vertCount else 0
         core.meshGetVertAttr(meshPtr, attrName, vertAttrPtr, vertCount)
 
@@ -109,6 +113,7 @@ lastJsonStr = None
 
 
 def load_scene(jsonStr):
+    print(time.strftime('[%H:%M:%S]'), 'load_scene')
     global sceneId
     global lastJsonStr
     delete_scene()
@@ -167,7 +172,7 @@ def graph_deal_input(graphPtr, inputName):
 
 def graph_deal_output(graphPtr, outputName, is_framed):
     if outputName not in bpy.data.objects:
-        print('WARNING: object {} not exist, creating now'.format(outputName))
+        print('WARNING: object `{}` not exist, creating now'.format(outputName))
         blenderMesh = bpy.data.meshes.new(outputName)
         blenderObj = bpy.data.objects.new(outputName, blenderMesh)
         bpy.context.collection.objects.link(blenderObj)
@@ -200,6 +205,7 @@ def execute_scene(graph_name, is_framed):
 
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr)
+    print('graph inputs:', inputNames)
     for inputName in inputNames:
         cb = graph_deal_input(graphPtr, inputName)
         prepareCallbacks.append(cb)
@@ -207,6 +213,7 @@ def execute_scene(graph_name, is_framed):
     core.graphApply(graphPtr)
 
     outputNames = core.graphGetOutputNames(graphPtr)
+    print('graph outputs:', outputNames)
     for outputName in outputNames:
         graph_deal_output(graphPtr, outputName, is_framed)
 

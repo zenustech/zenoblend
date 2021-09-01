@@ -194,7 +194,10 @@ def def_node_class(name, inputs, outputs, category):
             defls = {}
             for name, socket in self.inputs.items():
                 if hasattr(socket, 'default_value'):
-                    defls[name] = type(socket), socket.default_value
+                    value = socket.default_value
+                    if type(value).__name__ in ['bpy_prop_array', 'Vector']:
+                        value = tuple(value)
+                    defls[name] = type(socket), value
                 for link in socket.links:
                     links.append((
                         link.from_node, link.from_socket.name,
@@ -264,6 +267,41 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_apply", text="Apply")
         row.operator("node.zeno_stop", text="Stop")
 
+
+class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
+    '''Zeno specialized BlenderText node'''
+    text: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'text': 'texts'}  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
+
+
+class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 'object', '')], 'blender')):
+    '''Zeno specialized BlenderInput node'''
+    objid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
+
+
+class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', ''), ('bool', 'active:', '1')], [], 'blender')):
+    '''Zeno specialized BlenderOutput node'''
+    objid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
+        row = layout.row()
+        row.operator("node.zeno_apply", text="Apply")
+        row.operator("node.zeno_stop", text="Stop")
 
 
 def get_descriptors():
@@ -380,7 +418,7 @@ def unregister():
     try: deinit_node_subgraphs()
     except: pass
 
-    for name, cls in enum_types_cache.values():
+    for cls in enum_types_cache.values():
         unregister_class(cls)
     enum_types_cache.clear()
 

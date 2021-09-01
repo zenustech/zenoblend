@@ -28,7 +28,6 @@ set(ZENO_GLOBALSTATE OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_FAULTHANDLER ON CACHE BOOL "For Embeding Usage")
 set(ZENO_BENCHMARKING OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_HIDE_SYMBOLS ON CACHE BOOL "For Embeding Usage")
-set(EXTENSION_blenderio ON CACHE BOOL "For Embeding Usage")
 add_subdirectory(external/zeno)
 
 include_directories(include)

@@ -8,7 +8,7 @@ class ZenoApplyOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return getattr(context.space_data, 'tree_type', '') == 'ZenoNodeTree'
+        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
         from . import scenario
@@ -25,7 +25,7 @@ class ZenoStopOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return getattr(context.space_data, 'tree_type', '') == 'ZenoNodeTree'
+        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
         from . import scenario
@@ -59,8 +59,8 @@ def draw_menu(self, context):
 
 
 class ZenoSceneProperties(bpy.types.PropertyGroup):
-    node_tree: bpy.props.StringProperty(name='Node Tree')
-    node_tree_framed: bpy.props.StringProperty(name='Node Tree Framed')
+    node_tree: bpy.props.StringProperty(name='Static')
+    node_tree_framed: bpy.props.StringProperty(name='Framed')
 
 
 class ZenoScenePanel(bpy.types.Panel):
@@ -75,9 +75,12 @@ class ZenoScenePanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        layout.prop_search(scene.zeno, 'node_tree', bpy.data, 'node_groups')
-        layout.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
-        layout.operator('node.zeno_apply')
+        col = layout.column()
+        col.prop_search(scene.zeno, 'node_tree', bpy.data, 'node_groups')
+        col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
+        row = layout.row()
+        row.operator('node.zeno_apply')
+        row.operator('node.zeno_stop')
 
 
 classes = (

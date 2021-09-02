@@ -70,6 +70,8 @@ def draw_menu(self, context):
 class ZenoSceneProperties(bpy.types.PropertyGroup):
     node_tree_static: bpy.props.StringProperty(name='Static')
     node_tree_framed: bpy.props.StringProperty(name='Framed')
+    frame_start: bpy.props.IntProperty(name='Start', default=1)
+    frame_end: bpy.props.IntProperty(name='End', default=1000)
 
 
 class ZenoScenePanel(bpy.types.Panel):
@@ -84,6 +86,9 @@ class ZenoScenePanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        row = layout.row()
+        row.prop(scene.zeno, 'frame_start')
+        row.prop(scene.zeno, 'frame_end')
         col = layout.column()
         col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
         col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')

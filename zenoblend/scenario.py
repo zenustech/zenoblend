@@ -254,8 +254,8 @@ def update_frame(graph_name):
     global nextFrameId
     currFrameId = bpy.context.scene.frame_current
     if nextFrameId is None:
-        nextFrameId = bpy.context.scene.frame_start
-    if currFrameId > bpy.context.scene.frame_end:
+        nextFrameId = bpy.context.scene.zeno.frame_start
+    if currFrameId > bpy.context.scene.zeno.frame_end:
         return
     if currFrameId == nextFrameId:
         print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)

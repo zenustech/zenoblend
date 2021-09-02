@@ -309,10 +309,10 @@ def frame_update_callback(scene=None, *unused):
             return False
 
         reload_scene()
-        if static_tree:
-            update_scene(static_tree)
         if framed_tree:
             update_frame(framed_tree)
+        if static_tree:
+            update_scene(static_tree)
         return True
     finally:
         nowUpdating = False

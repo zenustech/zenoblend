@@ -355,7 +355,9 @@ def scene_update_callback(scene, depsgraph):
     if not nowUpdating:
         try:
             nowUpdating = True
-            update_scene()
+            static_tree, framed_tree = get_tree_names()
+            if static_tree:
+                update_scene(static_tree)
         finally:
             nowUpdating = False
 

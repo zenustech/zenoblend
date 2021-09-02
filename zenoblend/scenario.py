@@ -152,14 +152,17 @@ def reload_scene():  # todo: have an option to turn off this
 
 
 def delete_scene():
+    hadScene = False
     global sceneId
     global nextFrameId
     print(time.strftime('[%H:%M:%S]'), 'delete_scene')
     nextFrameId = None
     if sceneId is not None:
         core.deleteScene(sceneId)
+        hadScene = True
     sceneId = None
     frameCache.clear()
+    return hadScene
 
 
 def graph_deal_input(graphPtr, inputName):

@@ -1,4 +1,6 @@
 import bpy
+import time
+from . import scenario
 
 
 class ZenoApplyOperator(bpy.types.Operator):
@@ -11,11 +13,14 @@ class ZenoApplyOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        from . import scenario
         data = dump_scene()
+        t0 = time.time()
         scenario.load_scene(data)
         if not scenario.frame_update_callback():
             self.report({'ERROR'}, 'No node tree specified! Please check the Zeno Scene panel.')
+        else:
+            dt = time.time() - t0
+            self.report({'INFO'}, 'Node tree applied in {:.04f}s'.format(dt))
         return {'FINISHED'}
 
 
@@ -29,8 +34,10 @@ class ZenoStopOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        from . import scenario
-        scenario.delete_scene()
+        if scenario.delete_scene():
+            self.report({'INFO'}, 'Node tree stopped')
+        else:
+            self.report({'WARNING'}, 'Node tree already stopped!')
         return {'FINISHED'}
 
 
@@ -48,6 +55,7 @@ class ZenoReloadOperator(bpy.types.Operator):
         deinit_node_subgraphs()
         init_node_subgraphs()
         reinit_subgraph_sockets()
+        self.report({'INFO'}, 'Node tree reloaded')
         return {'FINISHED'}
 
 

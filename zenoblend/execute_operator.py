@@ -14,7 +14,8 @@ class ZenoApplyOperator(bpy.types.Operator):
         from . import scenario
         data = dump_scene()
         scenario.load_scene(data)
-        scenario.frame_update_callback()
+        if not scenario.frame_update_callback():
+            self.report({'ERROR'}, 'No node tree specified! Please check the Zeno Scene panel.')
         return {'FINISHED'}
 
 
@@ -59,7 +60,7 @@ def draw_menu(self, context):
 
 
 class ZenoSceneProperties(bpy.types.PropertyGroup):
-    node_tree: bpy.props.StringProperty(name='Static')
+    node_tree_static: bpy.props.StringProperty(name='Static')
     node_tree_framed: bpy.props.StringProperty(name='Framed')
 
 
@@ -76,7 +77,7 @@ class ZenoScenePanel(bpy.types.Panel):
         layout = self.layout
         scene = context.scene
         col = layout.column()
-        col.prop_search(scene.zeno, 'node_tree', bpy.data, 'node_groups')
+        col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
         col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
         row = layout.row()
         row.operator('node.zeno_apply')

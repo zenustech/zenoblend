@@ -247,7 +247,7 @@ def get_dependencies(graph_name):
 frameCache = {}
 
 
-def update_frame():
+def update_frame(graph_name):
     global nextFrameId
     currFrameId = bpy.context.scene.frame_current
     if nextFrameId is None:
@@ -257,7 +257,7 @@ def update_frame():
     if currFrameId == nextFrameId:
         print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)
         t0 = time.time()
-        execute_scene('NodeTreeFramed', is_framed=True)
+        execute_scene(graph_name, is_framed=True)
         print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
         nextFrameId = currFrameId + 1
 
@@ -274,12 +274,22 @@ def update_frame():
             blenderObj.data = blenderMesh
 
 
-def update_scene():
+def update_scene(graph_name):
     currFrameId = bpy.context.scene.frame_current
     print(time.strftime('[%H:%M:%S]'), 'update_scene')
     t0 = time.time()
-    execute_scene('NodeTree', is_framed=False)
+    execute_scene(graph_name, is_framed=False)
     print('update_scene spent', '{:.4f}s'.format(time.time() - t0))
+
+
+def get_tree_names():
+    static_tree = bpy.context.scene.zeno.node_tree_static
+    framed_tree = bpy.context.scene.zeno.node_tree_framed
+    if static_tree and static_tree not in bpy.context.scene.node_groups:
+        raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
+    if framed_tree and framed_tree not in bpy.context.scene.node_groups:
+        raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
+    return static_tree, framed_tree
 
 
 @bpy.app.handlers.persistent
@@ -290,9 +300,17 @@ def frame_update_callback(scene=None, *unused):
     global nowUpdating
     try:
         nowUpdating = True
+
+        static_tree, framed_tree = get_tree_names()
+        if not static_tree and not framed_tree:
+            return False
+
         reload_scene()
-        update_scene()
-        update_frame()
+        if static_tree:
+            update_scene(static_tree)
+        if framed_tree:
+            update_frame(framed_tree)
+        return True
     finally:
         nowUpdating = False
 
@@ -305,9 +323,12 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
-    needs_update = False
+    static_tree, framed_tree = get_tree_names()
+    if not static_tree:
+        return
+    our_deps = get_dependencies(static_tree)
 
-    our_deps = get_dependencies('NodeTree')
+    needs_update = False
     for update in depsgraph.updates:
         object = update.id
         if isinstance(object, bpy.types.Mesh):

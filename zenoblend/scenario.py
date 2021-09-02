@@ -285,9 +285,9 @@ def update_scene(graph_name):
 def get_tree_names():
     static_tree = bpy.context.scene.zeno.node_tree_static
     framed_tree = bpy.context.scene.zeno.node_tree_framed
-    if static_tree and static_tree not in bpy.context.scene.node_groups:
+    if static_tree and static_tree not in bpy.data.node_groups:
         raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
-    if framed_tree and framed_tree not in bpy.context.scene.node_groups:
+    if framed_tree and framed_tree not in bpy.data.node_groups:
         raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
     return static_tree, framed_tree
 

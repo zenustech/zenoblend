@@ -8,7 +8,7 @@ class ZenoApplyOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'ZenoNodeTree'
+        return getattr(context.space_data, 'tree_type', '') == 'ZenoNodeTree'
 
     def execute(self, context):
         from . import scenario
@@ -25,7 +25,7 @@ class ZenoStopOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'ZenoNodeTree'
+        return getattr(context.space_data, 'tree_type', '') == 'ZenoNodeTree'
 
     def execute(self, context):
         from . import scenario
@@ -58,21 +58,47 @@ def draw_menu(self, context):
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
+class ZenoSceneProperties(bpy.types.PropertyGroup):
+    node_tree: bpy.props.StringProperty(name='Node Tree')
+    node_tree_framed: bpy.props.StringProperty(name='Node Tree Framed')
+
+
+class ZenoScenePanel(bpy.types.Panel):
+    '''Zeno scene options'''
+
+    bl_label = 'Zeno Scene'
+    bl_idname = 'SCENE_PT_zeno_scene'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.prop_search(scene.zeno, 'node_tree', bpy.data, 'node_groups')
+        layout.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
+        layout.operator('node.zeno_apply')
+
+
 classes = (
     ZenoApplyOperator,
     ZenoStopOperator,
     ZenoReloadOperator,
+    ZenoSceneProperties,
+    ZenoScenePanel,
 )
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.Scene.zeno = bpy.props.PointerProperty(name='zeno', type=ZenoSceneProperties)
     bpy.types.NODE_MT_context_menu.append(draw_menu)
 
 
 def unregister():
     bpy.types.NODE_MT_context_menu.remove(draw_menu)
+    del bpy.types.Scene.zeno
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 

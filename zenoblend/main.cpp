@@ -334,7 +334,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
                 else if(attrIndex == 1) {
                     for (int i = 0; i < loopCount; i++) {
                         auto color = std::get<1>(vertColor)[loop[i].v];
-                        char graylevel = static_cast<unsigned char>(zeno::clamp(pow(color, gamma) * 255.0, 0.0, 255.0));
+                        auto graylevel = static_cast<unsigned char>(zeno::clamp(pow(color, gamma) * 255.0, 0.0, 255.0));
                         loopColor[i].r = graylevel;
                         loopColor[i].g = graylevel;
                         loopColor[i].b = graylevel;

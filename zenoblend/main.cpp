@@ -303,13 +303,44 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ( uintptr_t meshPtr
             , uintptr_t loopPtr
             , size_t loopCount
+            , const bool copyVertColor
+            , uintptr_t loopColorPtr = NULL
             ) -> void
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto loop = reinterpret_cast<MLoop *>(loopPtr);
+
         for (int i = 0; i < loopCount; i++) {
             loop[i].v = mesh->loop[i];
             loop[i].e = 0;
+        }
+
+        if(copyVertColor) {
+            auto iter = mesh->vert.attrs.find("clr");
+            if (iter != mesh->vert.attrs.end()) {
+                auto vertColor = iter->second;
+                auto attrIndex = vertColor.index();
+                auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
+
+                if (attrIndex == 0) {
+                    for (int i = 0; i < loopCount; i++) {
+                        auto color = std::get<0>(vertColor)[i];
+                        loopColor[i].r = static_cast<unsigned char>(color[0] * 255.0);
+                        loopColor[i].g = static_cast<unsigned char>(color[1] * 255.0);
+                        loopColor[i].b = static_cast<unsigned char>(color[2] * 255.0);
+                        loopColor[i].a = 255;
+                    }
+                }
+                else if(attrIndex == 1) {
+                    for (int i = 0; i < loopCount; i++) {
+                        char graylevel = static_cast<unsigned char>(std::get<1>(vertColor)[i] / 255.0);
+                        loopColor[i].r = graylevel;
+                        loopColor[i].g = graylevel;
+                        loopColor[i].b = graylevel;
+                        loopColor[i].a = 255;
+                    }
+                }
+            }
         }
     });
 

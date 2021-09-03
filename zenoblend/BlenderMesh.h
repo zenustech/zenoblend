@@ -28,6 +28,7 @@ struct BlenderAxis : IObjectClone<BlenderAxis> {
 
 struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis>, PolyMesh {
     bool is_smooth = false;
+    bool create_vertex_color = true;
 };
 
 using BlenderInputNamesType = std::set<std::string>;

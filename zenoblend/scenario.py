@@ -103,8 +103,8 @@ def meshToBlender(meshPtr, mesh):
     for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
         if attrName not in mesh.vertex_colors:
             mesh.vertex_colors.active = mesh.vertex_colors.new(name=attrName)
-        loopAttrPtr = mesh.vertex_colors[attrName].data[0].as_pointer() if loopCount else 0
-        core.meshGetLoopAttr(meshPtr, attrName, loopAttrPtr, loopCount)
+        loopColorPtr = mesh.vertex_colors[attrName].data[0].as_pointer() if loopCount else 0
+        core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
     mesh.polygons.add(polyCount)

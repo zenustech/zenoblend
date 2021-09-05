@@ -303,7 +303,6 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         ( uintptr_t meshPtr
         , uintptr_t loopPtr
         , size_t loopCount
-        , uintptr_t loopColorPtr
         ) -> void
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
@@ -336,24 +335,25 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
 
-        auto const &vertColor = mesh->loop.attrs.at(attrName);
-        auto attrIndex = vertColor.index();
+        auto const &attr = mesh->loop.attrs.at(attrName);
+        auto attrIndex = attr.index();
         auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
         const float gamma = 1.0f / 2.2f;
         if (attrIndex == 0) {
             #pragma omp parallel for
             for (int i = 0; i < loopCount; i++) {
-                auto color = std::get<0>(vertColor)[i];
+                auto color = std::get<0>(attr)[i];
+                printf("vc %f %f %f\n", color[0], color[1], color[2]);
                 loopColor[i].r = static_cast<unsigned char>(zeno::clamp(pow(color[0], gamma) * 255, 0, 255));
                 loopColor[i].g = static_cast<unsigned char>(zeno::clamp(pow(color[1], gamma) * 255, 0, 255));
                 loopColor[i].b = static_cast<unsigned char>(zeno::clamp(pow(color[2], gamma) * 255, 0, 255));
                 loopColor[i].a = 255;
             }
-        }
-        else if(attrIndex == 1) {
+        } else if (attrIndex == 1) {
             #pragma omp parallel for
             for (int i = 0; i < loopCount; i++) {
-                auto color = std::get<1>(vertColor)[i];
+                auto color = std::get<1>(attr)[i];
+                printf("vc %f\n", color);
                 auto graylevel = static_cast<unsigned char>(zeno::clamp(pow(color, gamma) * 255, 0, 255));
                 loopColor[i].r = graylevel;
                 loopColor[i].g = graylevel;

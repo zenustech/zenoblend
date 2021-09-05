@@ -238,6 +238,14 @@ def execute_scene(graph_name, is_framed):
     for cb in prepareCallbacks:
         cb()
 
+    vertexBuffer = core.graphGetLineVertexBuffer(graphPtr)
+    for i in vertexBuffer:
+        for j in i:
+            print(j)
+        print("\n")
+    print("\n")
+    print("completed!\n")
+
 
 def get_dependencies(graph_name):
     core.sceneSwitchToGraph(sceneId, graph_name)

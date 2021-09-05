@@ -1,6 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 namespace py = pybind11;
 
 #include <blender/DNA_mesh_types.h>
@@ -9,6 +10,9 @@ namespace py = pybind11;
 
 #include <zeno/zeno.h>
 #include "BlenderMesh.h"
+
+PYBIND11_MAKE_OPAQUE(std::vector<float>);
+PYBIND11_MAKE_OPAQUE(std::vector<std::vector<float>>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
 
@@ -162,6 +166,17 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         return meshPtr;
     });
 
+    py::bind_vector<std::vector<float>>(m, "Float3");
+    py::bind_vector<std::vector<std::vector<float>>>(m, "Float3Array");
+    m.def("graphGetLineVertexBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<float>>
+        {
+            auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+            auto lineVertexBuffer = graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
+            return lineVertexBuffer;
+    });
+
     m.def("meshGetMatrix", []
             ( uintptr_t meshPtr
             ) -> std::array<std::array<float, 4>, 4>
@@ -312,6 +327,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             loop[i].e = 0;
         }
     });
+
 
     py::register_exception_translator([](std::exception_ptr p) {
         try {

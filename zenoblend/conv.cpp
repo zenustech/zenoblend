@@ -162,6 +162,44 @@ ZENDEFNODE(PrimitiveToBMesh, {
     {"blender"},
 });
 
+struct LineViewer : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        bool display = get_param<bool>("display");
+
+        auto verts = prim->verts;
+        const size_t vertSize = verts.size();
+        zeno::LineViewerVertexBufferType vertexBuffer;
+        zeno::LineViewerColorBufferType colorBuffer;
+        vertexBuffer.reserve(vertSize);
+        colorBuffer.reserve(vertSize);
+        auto& vertexPos = verts.values;
+        auto& color = verts.attr<zinc::vec3f>("clr");
+        for (int i = 0; i < vertSize; i++) {
+            vertexBuffer.emplace_back(std::vector<float>(vertexPos[i].begin(), vertexPos[i].end()));
+            colorBuffer.emplace_back(std::vector<float>(color[i].begin(), color[i].end()));
+        }
+        graph->getUserData().set<zeno::LineViewerVertexBufferType>("line_vertex_buffer", std::move(vertexBuffer));
+        graph->getUserData().set<zeno::LineViewerColorBufferType>("line_color_buffer", std::move(colorBuffer));
+        
+        auto& lines = prim->lines.values;
+        const size_t lineSize = lines.size();
+        zeno::LineViewerIndexBufferType indexBuffer;
+        indexBuffer.reserve(lineSize);
+        for (int i = 0; i < lineSize; i++) {
+            indexBuffer.emplace_back(std::vector<int>(lines[i].begin(), lines[i].end()));
+        }
+        graph->getUserData().set<zeno::LineViewerIndexBufferType>("line_index_buffer", std::move(indexBuffer));       
+    }
+};
+
+ZENDEFNODE(LineViewer, {
+    {"prim"},
+    {},
+    {{"bool", "display", "1"}},
+    {"blender"},
+    });
+
 
 /*
 static void decompose_matrix(const Matrix4x4 &m, Vector3f *T,

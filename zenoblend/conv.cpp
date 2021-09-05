@@ -154,7 +154,7 @@ struct PrimitiveToBMesh : zeno::INode {
 
         prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
             using T = std::decay_t<decltype(attr[0])>;
-            auto loopattr = mesh->loop->add_attr<T>();
+            auto loopattr = mesh->loop.add_attr<T>(key);
             for (int i = 0; i < mesh->loop.size(); i++) {
                 loopattr[i] = attr[mesh->loop[i]];
             }
@@ -167,7 +167,7 @@ struct PrimitiveToBMesh : zeno::INode {
 ZENDEFNODE(PrimitiveToBMesh, {
     {"prim"},
     {"mesh"},
-    {{"bool", "is_smooth", "0"}, {"bool", "has_vert_color", "0"},
+    {{"bool", "is_smooth", "0"}, {"bool", "has_vert_color", "0"}},
     {"blender"},
 });
 

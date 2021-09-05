@@ -340,7 +340,6 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto attrIndex = vertColor.index();
         auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
         const float gamma = 1.0f / 2.2f;
-
         if (attrIndex == 0) {
             #pragma omp parallel for
             for (int i = 0; i < loopCount; i++) {
@@ -362,14 +361,6 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
                 loopColor[i].a = 255;
             }
         }
-    });
-
-    m.def("meshGetCreateVertexColor", []
-            (uintptr_t meshPtr
-            ) -> bool
-    {
-        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
-        return mesh->create_vertex_color;
     });
 
     py::register_exception_translator([](std::exception_ptr p) {

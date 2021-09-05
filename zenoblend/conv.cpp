@@ -50,6 +50,7 @@ struct BMeshToPrimitive : zeno::INode {
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         if (do_transform) {
             auto m = mesh->matrix;
+            #pragma omp parallel for
             for (int i = 0; i < mesh->vert.size(); i++) {
                 auto p = mesh->vert[i];
                 p = {
@@ -120,6 +121,7 @@ struct PrimitiveToBMesh : zeno::INode {
         mesh->is_smooth = get_param<bool>("is_smooth");
         mesh->poly.resize(prim->tris.size() + prim->quads.size());
         mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
+        #pragma omp parallel for
         for (int i = 0; i < prim->tris.size(); i++) {
             auto e = prim->tris[i];
             mesh->loop[i*3 + 0] = e[0];
@@ -139,6 +141,7 @@ struct PrimitiveToBMesh : zeno::INode {
 
         int base_loop = prim->tris.size() * 3;
         int base_poly = prim->tris.size();
+        #pragma omp parallel for
         for (int i = 0; i < prim->quads.size(); i++) {
             auto e = prim->quads[i];
             mesh->loop[base_loop + i*4 + 0] = e[0];
@@ -161,6 +164,7 @@ struct PrimitiveToBMesh : zeno::INode {
             prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
                 using T = std::decay_t<decltype(attr[0])>;
                 auto &arr = mesh->loop.add_attr<T>(key);
+                #pragma omp parallel for
                 for (int i = 0; i < mesh->loop.size(); i++) {
                     arr[i] = attr[mesh->loop[i]];
                 }

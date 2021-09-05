@@ -104,8 +104,7 @@ struct PrimitiveToBMesh : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto mesh = std::make_shared<zeno::BlenderMesh>();
         bool is_smooth = get_param<bool>("is_smooth");
-        mesh->create_vertex_color = get_param<bool>("create_vertex_color");
-        // todo: support matrix too?
+        // todo: support exporting matrix (for empty axis) too?
 
         mesh->vert.resize(prim->size());
         auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -159,7 +158,7 @@ struct PrimitiveToBMesh : zeno::INode {
 ZENDEFNODE(PrimitiveToBMesh, {
     {"prim"},
     {"mesh"},
-    {{"bool", "is_smooth", "0"}, {"bool", "create_vertex_color", "0"}},
+    {{"bool", "is_smooth", "0"}},
     {"blender"},
 });
 

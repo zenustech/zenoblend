@@ -313,34 +313,54 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             loop[i].v = mesh->loop[i];
             loop[i].e = 0;
         }
+    });
 
-        if(loopColorPtr) {
-            auto iter = mesh->vert.attrs.find("clr");
-            if (iter != mesh->vert.attrs.end()) {
-                auto vertColor = iter->second;
-                auto attrIndex = vertColor.index();
-                auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
-                const double gamma = 1.0 / 2.2;
+    m.def("meshGetLoopAttrNameType", []
+        ( uintptr_t meshPtr
+        ) -> std::map<std::string, size_t>
+    {
+        std::map<std::string, size_t> attrNameType;
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        for (auto const& [key, value] : mesh->loop.attrs) {
+            attrNameType.emplace(key, value.index());
+        }
+        return attrNameType;
+    });
 
-                if (attrIndex == 0) {
-                    for (int i = 0; i < loopCount; i++) {
-                        auto color = std::get<0>(vertColor)[loop[i].v];
-                        loopColor[i].r = static_cast<unsigned char>(zeno::clamp(pow(color[0], gamma) * 255.0, 0.0, 255.0));
-                        loopColor[i].g = static_cast<unsigned char>(zeno::clamp(pow(color[1], gamma) * 255.0, 0.0, 255.0));
-                        loopColor[i].b = static_cast<unsigned char>(zeno::clamp(pow(color[2], gamma) * 255.0, 0.0, 255.0));
-                        loopColor[i].a = 255;
-                    }
-                }
-                else if(attrIndex == 1) {
-                    for (int i = 0; i < loopCount; i++) {
-                        auto color = std::get<1>(vertColor)[loop[i].v];
-                        auto graylevel = static_cast<unsigned char>(zeno::clamp(pow(color, gamma) * 255.0, 0.0, 255.0));
-                        loopColor[i].r = graylevel;
-                        loopColor[i].g = graylevel;
-                        loopColor[i].b = graylevel;
-                        loopColor[i].a = 255;
-                    }
-                }
+    m.def("meshGetLoopColor", []
+        ( uintptr_t meshPtr
+        , std::string const &attrName
+        , uintptr_t loopColorPtr
+        , size_t loopCount
+        ) -> void
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+
+        auto iter = mesh->loop.attrs.at(attrName);
+        auto vertColor = iter->second;
+        auto attrIndex = vertColor.index();
+        auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
+        const float gamma = 1.0f / 2.2f;
+
+        if (attrIndex == 0) {
+            #pragma omp parallel for
+            for (int i = 0; i < loopCount; i++) {
+                auto color = std::get<0>(vertColor)[i];
+                loopColor[i].r = static_cast<unsigned char>(zeno::clamp(pow(color[0], gamma) * 255, 0, 255));
+                loopColor[i].g = static_cast<unsigned char>(zeno::clamp(pow(color[1], gamma) * 255, 0, 255));
+                loopColor[i].b = static_cast<unsigned char>(zeno::clamp(pow(color[2], gamma) * 255, 0, 255));
+                loopColor[i].a = 255;
+            }
+        }
+        else if(attrIndex == 1) {
+            #pragma omp parallel for
+            for (int i = 0; i < loopCount; i++) {
+                auto color = std::get<1>(vertColor)[i];
+                auto graylevel = static_cast<unsigned char>(zeno::clamp(pow(color, gamma) * 255, 0, 255));
+                loopColor[i].r = graylevel;
+                loopColor[i].g = graylevel;
+                loopColor[i].b = graylevel;
+                loopColor[i].a = 255;
             }
         }
     });

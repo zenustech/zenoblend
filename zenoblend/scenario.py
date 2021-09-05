@@ -98,12 +98,13 @@ def meshToBlender(meshPtr, mesh):
     mesh.loops.add(loopCount)
     assert loopCount == len(mesh.loops), (loopCount, len(mesh.loops))
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
-    vertColorPtr = 0
-    if core.meshGetCreateVertexColor(meshPtr):
-        if "Col" not in mesh.vertex_colors:
-            mesh.vertex_colors.active = mesh.vertex_colors.new(name="Col")
-        vertColorPtr = mesh.vertex_colors["Col"].data[0].as_pointer() if vertCount else 0
-    core.meshGetLoops(meshPtr, loopPtr, loopCount, vertColorPtr)
+    core.meshGetLoops(meshPtr, loopPtr, loopCount)
+
+    for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
+        if attrName not in mesh.vertex_colors:
+            mesh.vertex_colors.active = mesh.vertex_colors.new(name=attrName)
+        loopAttrPtr = mesh.vertex_colors[attrName].data[0].as_pointer() if loopCount else 0
+        core.meshGetLoopAttr(meshPtr, attrName, loopAttrPtr, loopCount)
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
     mesh.polygons.add(polyCount)

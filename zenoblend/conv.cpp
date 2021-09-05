@@ -154,9 +154,9 @@ struct PrimitiveToBMesh : zeno::INode {
 
         prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
             using T = std::decay_t<decltype(attr[0])>;
-            auto loopattr = mesh->loop.add_attr<T>(key);
+            auto &arr = mesh->loop.add_attr<T>(key);
             for (int i = 0; i < mesh->loop.size(); i++) {
-                loopattr[i] = attr[mesh->loop[i]];
+                arr[i] = attr[mesh->loop[i]];
             }
         });
 

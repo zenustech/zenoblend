@@ -45,6 +45,7 @@ struct BMeshToPrimitive : zeno::INode {
         auto allow_quads = get_param<bool>("allow_quads");
         auto do_transform = get_param<bool>("do_transform");
 
+        // todo: support **input** blender attributes
         prim->resize(mesh->vert.size());
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         if (do_transform) {
@@ -151,6 +152,14 @@ struct PrimitiveToBMesh : zeno::INode {
             }
         });
 
+        prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
+            using T = std::decay_t<decltype(attr[0])>;
+            auto loopattr = mesh->loop->add_attr<T>();
+            for (int i = 0; i < mesh->loop.size(); i++) {
+                loopattr[i] = attr[mesh->loop[i]];
+            }
+        });
+
         set_output("mesh", std::move(mesh));
     }
 };
@@ -158,7 +167,7 @@ struct PrimitiveToBMesh : zeno::INode {
 ZENDEFNODE(PrimitiveToBMesh, {
     {"prim"},
     {"mesh"},
-    {{"bool", "is_smooth", "0"}},
+    {{"bool", "is_smooth", "0"}, {"bool", "has_vert_color", "0"},
     {"blender"},
 });
 

@@ -336,8 +336,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
 
-        auto iter = mesh->loop.attrs.at(attrName);
-        auto vertColor = iter->second;
+        auto const &vertColor = mesh->loop.attrs.at(attrName);
         auto attrIndex = vertColor.index();
         auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
         const float gamma = 1.0f / 2.2f;

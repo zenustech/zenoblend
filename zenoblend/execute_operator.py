@@ -34,6 +34,9 @@ class ZenoStopOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
+        bpy.types.SpaceView3D.draw_handler_remove(scenario.handler, 'WINDOW')
+        scenario.handler = None
+        scenario.tag_redraw_all_3dviews()
         if scenario.delete_scene():
             self.report({'INFO'}, 'Node tree stopped')
         else:

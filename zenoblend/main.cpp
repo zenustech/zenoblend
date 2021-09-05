@@ -166,15 +166,44 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         return meshPtr;
     });
 
-    py::bind_vector<std::vector<float>>(m, "Float3");
-    py::bind_vector<std::vector<std::vector<float>>>(m, "Float3Array");
+    py::bind_vector<std::vector<float>>(m, "FloatVec3");
+    py::bind_vector<std::vector<std::vector<float>>>(m, "FloatVec3Array");
+
     m.def("graphGetLineVertexBuffer", []
         (uintptr_t graphPtr
         ) -> std::vector<std::vector<float>>
-        {
-            auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-            auto lineVertexBuffer = graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
-            return lineVertexBuffer;
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        return graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
+    });
+
+    m.def("graphGetLineColorBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<float>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        return graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
+    });
+
+    py::bind_vector<std::vector<int>>(m, "IntVec2");
+    py::bind_vector<std::vector<std::vector<int>>>(m, "IntVec2Array");
+
+    m.def("graphGetLineIndexBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<int>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        return graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer");
+    });
+
+    m.def("graphClearLineBuffer", []
+        (uintptr_t graphPtr
+        ) -> void
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer").clear();
+        graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer").clear();
+        graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer").clear();
     });
 
     m.def("meshGetMatrix", []

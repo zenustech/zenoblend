@@ -1,5 +1,7 @@
 import bpy
 import time
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 from .dll import core
 
@@ -88,7 +90,7 @@ def meshToBlender(meshPtr, mesh):
         elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'POINT':
             mesh.attributes.remove(mesh.attributes[attrName])
             mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
-        print('adding FACE attribute', attrName, 'with type', attrType)
+        print('adding VERTEX attribute', attrName, 'with type', attrType)
 
         if vertCount:
             vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
@@ -216,10 +218,32 @@ def graph_deal_output(graphPtr, outputName, is_framed):
 
     meshToBlender(outMeshPtr, blenderMesh)
 
+shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+handler = None
+    
+def draw():
+    shader.bind()
+    shader.uniform_float("color", (1, 0, 0, 1))
+    gpu.state.depth_test_set('LESS_EQUAL')
+    gpu.state.depth_mask_set(True)
+    batch.draw(shader)
+    gpu.state.depth_mask_set(False)
+
+
+def tag_redraw_all_3dviews():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                for region in area.regions:
+                    if region.type == 'WINDOW':
+                        region.tag_redraw()
+
 
 def execute_scene(graph_name, is_framed):
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
+
+    core.graphClearLineBuffer(graphPtr)
 
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr)
@@ -238,13 +262,21 @@ def execute_scene(graph_name, is_framed):
     for cb in prepareCallbacks:
         cb()
 
-    vertexBuffer = core.graphGetLineVertexBuffer(graphPtr)
-    for i in vertexBuffer:
-        for j in i:
-            print(j)
-        print("\n")
-    print("\n")
-    print("completed!\n")
+    line_pos = core.graphGetLineVertexBuffer(graphPtr)
+    line_color_buffer = core.graphGetLineColorBuffer(graphPtr)
+    line_indices = core.graphGetLineIndexBuffer(graphPtr)
+   
+    global handler
+    if len(line_pos):
+        if not handler:
+            global batch
+            batch = batch_for_shader(shader, 'LINES', {"pos": line_pos}, indices=line_indices)
+            handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
+    else:
+        if handler:
+            bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+            handler = None
+            tag_redraw_all_3dviews()
 
 
 def get_dependencies(graph_name):

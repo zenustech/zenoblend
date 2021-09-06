@@ -284,6 +284,7 @@ def execute_scene(graph_name, is_framed):
         if handler:
             bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
         handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
+        tag_redraw_all_3dviews()
     elif handler:
         bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
         handler = None

@@ -178,8 +178,9 @@ struct LineViewer : zeno::INode {
         const size_t vertSize = verts.size();
         auto &vertexBuffer = graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
         auto &colorBuffer = graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
-        vertexBuffer.reserve(vertexBuffer.size() + vertSize);
-        colorBuffer.reserve(colorBuffer.size() + vertSize);
+        auto buffersize = vertexBuffer.size();
+        vertexBuffer.reserve(buffersize + vertSize);
+        colorBuffer.reserve(buffersize + vertSize);
         auto &vertexPos = verts.values;
         auto &color = verts.attr<zinc::vec3f>("clr");
         for (int i = 0; i < vertSize; i++) {
@@ -192,7 +193,8 @@ struct LineViewer : zeno::INode {
         const size_t lineSize = lines.size();
         indexBuffer.reserve(indexBuffer.size() + lineSize);
         for (int i = 0; i < lineSize; i++) {
-            indexBuffer.emplace_back(std::vector<int>(lines[i].begin(), lines[i].end()));
+            std::vector<int> line { lines[i][0] + static_cast<int>(buffersize), lines[i][1] + static_cast<int>(buffersize) };
+            indexBuffer.emplace_back(std::move(line));
         }
     }
 };

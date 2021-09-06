@@ -4,6 +4,7 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 
 from .dll import core
+from .polywire_shaders import vertex_shader, fragment_shader, geometry_shader, preprocessor
 
 # https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
 def _prepare_mesh(obj, depsgraph, no_modifiers=False):
@@ -218,14 +219,24 @@ def graph_deal_output(graphPtr, outputName, is_framed):
 
     meshToBlender(outMeshPtr, blenderMesh)
 
-shader = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
+
+shader = gpu.types.GPUShader(vertex_shader, fragment_shader, geocode = geometry_shader, defines = preprocessor)
 handler = None
     
 def draw():
     shader.bind()
-    shader.uniform_float("color", (1, 0, 0, 1))
+    matrix = bpy.context.region_data.perspective_matrix
+    shader.uniform_float("ModelViewProjectionMatrix", matrix)
+    shader.uniform_float("lineWidth", 1.2)
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for r in area.regions:
+                if r.type == 'WINDOW':
+                    shader.uniform_float("viewportSize", (r.width, r.height)) 
+                    break
     gpu.state.depth_test_set('LESS_EQUAL')
     gpu.state.depth_mask_set(True)
+    gpu.state.blend_set("ALPHA")
     batch.draw(shader)
     gpu.state.depth_mask_set(False)
 
@@ -263,20 +274,20 @@ def execute_scene(graph_name, is_framed):
         cb()
 
     line_pos = core.graphGetLineVertexBuffer(graphPtr)
-    line_color_buffer = core.graphGetLineColorBuffer(graphPtr)
+    line_color = core.graphGetLineColorBuffer(graphPtr)
     line_indices = core.graphGetLineIndexBuffer(graphPtr)
    
     global handler
-    if len(line_pos):
-        if not handler:
-            global batch
-            batch = batch_for_shader(shader, 'LINES', {"pos": line_pos}, indices=line_indices)
-            handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
-    else:
+    if line_pos:
+        global batch
+        batch = batch_for_shader(shader, 'LINES', {"pos": line_pos, 'color': line_color}, indices=line_indices)
         if handler:
             bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
-            handler = None
-            tag_redraw_all_3dviews()
+        handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
+    elif handler:
+        bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+        handler = None
+        tag_redraw_all_3dviews()
 
 
 def get_dependencies(graph_name):

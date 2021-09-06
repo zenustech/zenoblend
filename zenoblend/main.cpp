@@ -312,8 +312,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
     });
 
     m.def("meshGetPolygonsCount", []
-            ( uintptr_t meshPtr
-            ) -> size_t
+        ( uintptr_t meshPtr
+        ) -> size_t
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         return mesh->poly.size();
@@ -336,27 +336,74 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
     });
 
     m.def("meshGetLoopsCount", []
-            ( uintptr_t meshPtr
-            ) -> size_t
+        ( uintptr_t meshPtr
+        ) -> size_t
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         return mesh->loop.size();
     });
 
     m.def("meshGetLoops", []
-            ( uintptr_t meshPtr
-            , uintptr_t loopPtr
-            , size_t loopCount
-            ) -> void
+        ( uintptr_t meshPtr
+        , uintptr_t loopPtr
+        , size_t loopCount
+        ) -> void
     {
         auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
         auto loop = reinterpret_cast<MLoop *>(loopPtr);
+
         for (int i = 0; i < loopCount; i++) {
             loop[i].v = mesh->loop[i];
             loop[i].e = 0;
         }
     });
 
+
+    m.def("meshGetLoopAttrNameType", []
+        ( uintptr_t meshPtr
+        ) -> std::map<std::string, size_t>
+    {
+        std::map<std::string, size_t> attrNameType;
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        for (auto const& [key, value] : mesh->loop.attrs) {
+            attrNameType.emplace(key, value.index());
+        }
+        return attrNameType;
+    });
+
+    m.def("meshGetLoopColor", []
+        ( uintptr_t meshPtr
+        , std::string const &attrName
+        , uintptr_t loopColorPtr
+        , size_t loopCount
+        ) -> void
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+
+        auto const &attr = mesh->loop.attrs.at(attrName);
+        auto attrIndex = attr.index();
+        auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
+        if (attrIndex == 0) {
+            #pragma omp parallel for
+            for (int i = 0; i < loopCount; i++) {
+                auto color = std::get<0>(attr)[i];
+                loopColor[i].r = static_cast<unsigned char>(zeno::clamp(color[0] * 255, 0, 255));
+                loopColor[i].g = static_cast<unsigned char>(zeno::clamp(color[1] * 255, 0, 255));
+                loopColor[i].b = static_cast<unsigned char>(zeno::clamp(color[2] * 255, 0, 255));
+                loopColor[i].a = 255; // todo: support vec4f attributes in future
+            }
+        } else if (attrIndex == 1) {
+            #pragma omp parallel for
+            for (int i = 0; i < loopCount; i++) {
+                auto color = std::get<1>(attr)[i];
+                auto graylevel = static_cast<unsigned char>(zeno::clamp(color * 255, 0, 255));
+                loopColor[i].r = graylevel;
+                loopColor[i].g = graylevel;
+                loopColor[i].b = graylevel;
+                loopColor[i].a = 255;
+            }
+        }
+    });
 
     py::register_exception_translator([](std::exception_ptr p) {
         try {

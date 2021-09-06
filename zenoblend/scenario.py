@@ -91,7 +91,7 @@ def meshToBlender(meshPtr, mesh):
         elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'POINT':
             mesh.attributes.remove(mesh.attributes[attrName])
             mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
-        print('adding VERTEX attribute', attrName, 'with type', attrType)
+        print('adding POINT attribute', attrName, 'with type', attrType)
 
         if vertCount:
             vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
@@ -102,6 +102,12 @@ def meshToBlender(meshPtr, mesh):
     assert loopCount == len(mesh.loops), (loopCount, len(mesh.loops))
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
     core.meshGetLoops(meshPtr, loopPtr, loopCount)
+
+    for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
+        if attrName not in mesh.vertex_colors:
+            mesh.vertex_colors.active = mesh.vertex_colors.new(name=attrName)
+        loopColorPtr = mesh.vertex_colors[attrName].data[0].as_pointer() if loopCount else 0
+        core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
     mesh.polygons.add(polyCount)

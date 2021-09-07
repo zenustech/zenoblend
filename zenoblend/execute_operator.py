@@ -3,6 +3,7 @@ import time
 from . import scenario
 
 
+
 class ZenoApplyOperator(bpy.types.Operator):
     """Apply the Zeno graph"""
     bl_idname = "node.zeno_apply"
@@ -13,6 +14,7 @@ class ZenoApplyOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
+        bpy.context.scene.zeno.executing = True
         data = dump_scene()
         t0 = time.time()
         scenario.load_scene(data)
@@ -34,9 +36,8 @@ class ZenoStopOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        bpy.types.SpaceView3D.draw_handler_remove(scenario.handler, 'WINDOW')
-        scenario.handler = None
-        scenario.tag_redraw_all_3dviews()
+        scenario.clear_draw_handler()
+        bpy.context.scene.zeno.executing = False
         if scenario.delete_scene():
             self.report({'INFO'}, 'Node tree stopped')
         else:
@@ -75,6 +76,7 @@ class ZenoSceneProperties(bpy.types.PropertyGroup):
     node_tree_framed: bpy.props.StringProperty(name='Framed')
     frame_start: bpy.props.IntProperty(name='Start', default=1)
     frame_end: bpy.props.IntProperty(name='End', default=1000)
+    executing: bpy.props.BoolProperty(name='is_executing', default=False)
 
 
 class ZenoScenePanel(bpy.types.Panel):
@@ -249,12 +251,12 @@ def dump_tree(tree):
 
         for input_name, input in node.inputs.items():
             if input.is_linked:
-                assert len(input.links) == 1
-                link = input.links[0]
-                src_node_name = link.from_node.name
-                src_socket_name = link.from_socket.name
-                yield ('bindNodeInput', node_name, input_name,
-                        src_node_name, src_socket_name)
+                if len(input.links) == 1:
+                    link = input.links[0]
+                    src_node_name = link.from_node.name
+                    src_socket_name = link.from_socket.name
+                    yield ('bindNodeInput', node_name, input_name,
+                            src_node_name, src_socket_name)
             elif hasattr(input, 'default_value'):
                 value = input.default_value
                 if type(value).__name__ in ['bpy_prop_array', 'Vector']:

@@ -4,6 +4,7 @@ from nodeitems_utils import NodeCategory, NodeItem
 from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
+from .scenario import nowUpdating
 
 
 class ZenoNodeTree(NodeTree):
@@ -302,6 +303,15 @@ class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'o
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
         row.operator("node.zeno_stop", text="Stop")
+
+class ZenoNode_LineViewer(def_node_class('LineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
+    '''Zeno specialized LineViewer node'''
+   
+    def update(self):  # rewrite update function
+        if bpy.context.scene.zeno.executing:
+            bpy.ops.node.zeno_apply('EXEC_DEFAULT')
+
+
 
 
 def get_descriptors():

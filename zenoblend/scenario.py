@@ -255,6 +255,11 @@ def tag_redraw_all_3dviews():
                     if region.type == 'WINDOW':
                         region.tag_redraw()
 
+def clear_draw_handler():
+    global handler
+    bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+    handler = None
+    tag_redraw_all_3dviews()
 
 def execute_scene(graph_name, is_framed):
     core.sceneSwitchToGraph(sceneId, graph_name)
@@ -292,9 +297,7 @@ def execute_scene(graph_name, is_framed):
         handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
         tag_redraw_all_3dviews()
     elif handler:
-        bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
-        handler = None
-        tag_redraw_all_3dviews()
+        clear_draw_handler()
 
 
 def get_dependencies(graph_name):
@@ -419,8 +422,12 @@ def scene_update_callback(scene, depsgraph):
         finally:
             nowUpdating = False
 
+@bpy.app.handlers.persistent
+def load_post_handler(dummy):
+    clear_draw_handler()
 
 def register():
+    bpy.app.handlers.load_post.append(load_post_handler)
     if frame_update_callback not in bpy.app.handlers.frame_change_post:
         bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:

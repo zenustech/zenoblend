@@ -1,4 +1,6 @@
 import bpy
+import time
+from . import scenario
 
 
 class ZenoApplyOperator(bpy.types.Operator):
@@ -8,13 +10,17 @@ class ZenoApplyOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'ZenoNodeTree'
+        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        from . import scenario
         data = dump_scene()
+        t0 = time.time()
         scenario.load_scene(data)
-        scenario.frame_update_callback()
+        if not scenario.frame_update_callback():
+            self.report({'ERROR'}, 'No node tree specified! Please check the Zeno Scene panel.')
+        else:
+            dt = time.time() - t0
+            self.report({'INFO'}, 'Node tree applied in {:.04f}s'.format(dt))
         return {'FINISHED'}
 
 
@@ -25,11 +31,13 @@ class ZenoStopOperator(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.space_data.tree_type == 'ZenoNodeTree'
+        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        from . import scenario
-        scenario.delete_scene()
+        if scenario.delete_scene():
+            self.report({'INFO'}, 'Node tree stopped')
+        else:
+            self.report({'WARNING'}, 'Node tree already stopped!')
         return {'FINISHED'}
 
 
@@ -47,6 +55,7 @@ class ZenoReloadOperator(bpy.types.Operator):
         deinit_node_subgraphs()
         init_node_subgraphs()
         reinit_subgraph_sockets()
+        self.report({'INFO'}, 'Node tree reloaded')
         return {'FINISHED'}
 
 
@@ -58,21 +67,55 @@ def draw_menu(self, context):
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
+class ZenoSceneProperties(bpy.types.PropertyGroup):
+    node_tree_static: bpy.props.StringProperty(name='Static')
+    node_tree_framed: bpy.props.StringProperty(name='Framed')
+    frame_start: bpy.props.IntProperty(name='Start', default=1)
+    frame_end: bpy.props.IntProperty(name='End', default=1000)
+
+
+class ZenoScenePanel(bpy.types.Panel):
+    '''Zeno scene options'''
+
+    bl_label = 'Zeno Scene'
+    bl_idname = 'SCENE_PT_zeno_scene'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        row = layout.row()
+        row.prop(scene.zeno, 'frame_start')
+        row.prop(scene.zeno, 'frame_end')
+        col = layout.column()
+        col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
+        col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
+        row = layout.row()
+        row.operator('node.zeno_apply')
+        row.operator('node.zeno_stop')
+
+
 classes = (
     ZenoApplyOperator,
     ZenoStopOperator,
     ZenoReloadOperator,
+    ZenoSceneProperties,
+    ZenoScenePanel,
 )
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
+    bpy.types.Scene.zeno = bpy.props.PointerProperty(name='zeno', type=ZenoSceneProperties)
     bpy.types.NODE_MT_context_menu.append(draw_menu)
 
 
 def unregister():
     bpy.types.NODE_MT_context_menu.remove(draw_menu)
+    del bpy.types.Scene.zeno
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 

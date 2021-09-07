@@ -7,6 +7,12 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if (CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+endif()
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
+endif()
 
 set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/zenoblend/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR})
@@ -28,6 +34,7 @@ set(ZENO_GLOBALSTATE OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_FAULTHANDLER ON CACHE BOOL "For Embeding Usage")
 set(ZENO_BENCHMARKING OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_HIDE_SYMBOLS ON CACHE BOOL "For Embeding Usage")
+set(EXTENSION_oldzenbase OFF CACHE BOOL "For Embeding Usage")###
 add_subdirectory(external/zeno)
 
 include_directories(include)

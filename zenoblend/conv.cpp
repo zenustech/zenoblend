@@ -45,10 +45,12 @@ struct BMeshToPrimitive : zeno::INode {
         auto allow_quads = get_param<bool>("allow_quads");
         auto do_transform = get_param<bool>("do_transform");
 
+        // todo: support **input** blender attributes
         prim->resize(mesh->vert.size());
         auto &pos = prim->add_attr<zeno::vec3f>("pos");
         if (do_transform) {
             auto m = mesh->matrix;
+            #pragma omp parallel for
             for (int i = 0; i < mesh->vert.size(); i++) {
                 auto p = mesh->vert[i];
                 p = {
@@ -103,21 +105,23 @@ struct PrimitiveToBMesh : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto mesh = std::make_shared<zeno::BlenderMesh>();
-        bool is_smooth = get_param<bool>("is_smooth");
-        // todo: support matrix too?
+        // todo: support exporting transform matrix (for empty axis) too?
 
         mesh->vert.resize(prim->size());
         auto &pos = prim->attr<zeno::vec3f>("pos");
         for (int i = 0; i < prim->size(); i++) {
             mesh->vert[i] = pos[i];
         }
-        prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
-            mesh->vert.attrs[key] = attr;  // deep copy
-        });
+        if (get_param<bool>("has_vert_attr")) {
+            prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
+                mesh->vert.attrs[key] = attr;  // deep copy
+            });
+        }
 
-        mesh->is_smooth = is_smooth;
+        mesh->is_smooth = get_param<bool>("is_smooth");
         mesh->poly.resize(prim->tris.size() + prim->quads.size());
         mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
+        #pragma omp parallel for
         for (int i = 0; i < prim->tris.size(); i++) {
             auto e = prim->tris[i];
             mesh->loop[i*3 + 0] = e[0];
@@ -125,16 +129,19 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->loop[i*3 + 2] = e[2];
             mesh->poly[i] = {i*3, 3};
         }
-        prim->tris.foreach_attr([&] (auto const &key, auto const &attr) {
-            using T = std::decay_t<decltype(attr[0])>;
-            auto &arr = mesh->poly.add_attr<T>(key);
-            for (int i = 0; i < prim->tris.size(); i++) {
-                arr[i] = attr[i];
-            }
-        });
+        if (get_param<bool>("has_face_attr")) {
+            prim->tris.foreach_attr([&] (auto const &key, auto const &attr) {
+                using T = std::decay_t<decltype(attr[0])>;
+                auto &arr = mesh->poly.add_attr<T>(key);
+                for (int i = 0; i < prim->tris.size(); i++) {
+                    arr[i] = attr[i];
+                }
+            });
+        }
 
         int base_loop = prim->tris.size() * 3;
         int base_poly = prim->tris.size();
+        #pragma omp parallel for
         for (int i = 0; i < prim->quads.size(); i++) {
             auto e = prim->quads[i];
             mesh->loop[base_loop + i*4 + 0] = e[0];
@@ -143,13 +150,26 @@ struct PrimitiveToBMesh : zeno::INode {
             mesh->loop[base_loop + i*4 + 3] = e[3];
             mesh->poly[base_poly + i] = {base_loop + i*4, 4};
         }
-        prim->quads.foreach_attr([&] (auto const &key, auto const &attr) {
-            using T = std::decay_t<decltype(attr[0])>;
-            auto &arr = mesh->poly.add_attr<T>(key);
-            for (int i = 0; i < prim->tris.size(); i++) {
-                arr[base_poly + i] = attr[i];
-            }
-        });
+        if (get_param<bool>("has_face_attr")) {
+            prim->quads.foreach_attr([&] (auto const &key, auto const &attr) {
+                using T = std::decay_t<decltype(attr[0])>;
+                auto &arr = mesh->poly.add_attr<T>(key);
+                for (int i = 0; i < prim->tris.size(); i++) {
+                    arr[base_poly + i] = attr[i];
+                }
+            });
+        }
+
+        if (get_param<bool>("has_vert_color")) {
+            prim->verts.foreach_attr([&] (auto const &key, auto const &attr) {
+                using T = std::decay_t<decltype(attr[0])>;
+                auto &arr = mesh->loop.add_attr<T>(key);
+                #pragma omp parallel for
+                for (int i = 0; i < mesh->loop.size(); i++) {
+                    arr[i] = attr[mesh->loop[i]];
+                }
+            });
+        }
 
         set_output("mesh", std::move(mesh));
     }
@@ -158,7 +178,12 @@ struct PrimitiveToBMesh : zeno::INode {
 ZENDEFNODE(PrimitiveToBMesh, {
     {"prim"},
     {"mesh"},
-    {{"bool", "is_smooth", "0"}},
+    {
+    {"bool", "is_smooth", "0"},
+    {"bool", "has_vert_color", "0"},
+    {"bool", "has_vert_attr", "0"},
+    {"bool", "has_face_attr", "0"},
+    },
     {"blender"},
 });
 

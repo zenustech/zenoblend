@@ -88,7 +88,7 @@ def meshToBlender(meshPtr, mesh):
         elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'POINT':
             mesh.attributes.remove(mesh.attributes[attrName])
             mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
-        print('adding FACE attribute', attrName, 'with type', attrType)
+        print('adding POINT attribute', attrName, 'with type', attrType)
 
         if vertCount:
             vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
@@ -99,6 +99,12 @@ def meshToBlender(meshPtr, mesh):
     assert loopCount == len(mesh.loops), (loopCount, len(mesh.loops))
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
     core.meshGetLoops(meshPtr, loopPtr, loopCount)
+
+    for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
+        if attrName not in mesh.vertex_colors:
+            mesh.vertex_colors.active = mesh.vertex_colors.new(name=attrName)
+        loopColorPtr = mesh.vertex_colors[attrName].data[0].as_pointer() if loopCount else 0
+        core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
     mesh.polygons.add(polyCount)
@@ -152,14 +158,17 @@ def reload_scene():  # todo: have an option to turn off this
 
 
 def delete_scene():
+    hadScene = False
     global sceneId
     global nextFrameId
     print(time.strftime('[%H:%M:%S]'), 'delete_scene')
     nextFrameId = None
     if sceneId is not None:
         core.deleteScene(sceneId)
+        hadScene = True
     sceneId = None
     frameCache.clear()
+    return hadScene
 
 
 def graph_deal_input(graphPtr, inputName):
@@ -247,17 +256,17 @@ def get_dependencies(graph_name):
 frameCache = {}
 
 
-def update_frame():
+def update_frame(graph_name):
     global nextFrameId
     currFrameId = bpy.context.scene.frame_current
     if nextFrameId is None:
-        nextFrameId = bpy.context.scene.frame_start
-    if currFrameId > bpy.context.scene.frame_end:
+        nextFrameId = bpy.context.scene.zeno.frame_start
+    if currFrameId > bpy.context.scene.zeno.frame_end:
         return
     if currFrameId == nextFrameId:
         print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)
         t0 = time.time()
-        execute_scene('NodeTreeFramed', is_framed=True)
+        execute_scene(graph_name, is_framed=True)
         print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
         nextFrameId = currFrameId + 1
 
@@ -274,12 +283,22 @@ def update_frame():
             blenderObj.data = blenderMesh
 
 
-def update_scene():
+def update_scene(graph_name):
     currFrameId = bpy.context.scene.frame_current
     print(time.strftime('[%H:%M:%S]'), 'update_scene')
     t0 = time.time()
-    execute_scene('NodeTree', is_framed=False)
+    execute_scene(graph_name, is_framed=False)
     print('update_scene spent', '{:.4f}s'.format(time.time() - t0))
+
+
+def get_tree_names():
+    static_tree = bpy.context.scene.zeno.node_tree_static
+    framed_tree = bpy.context.scene.zeno.node_tree_framed
+    if static_tree and static_tree not in bpy.data.node_groups:
+        raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
+    if framed_tree and framed_tree not in bpy.data.node_groups:
+        raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
+    return static_tree, framed_tree
 
 
 @bpy.app.handlers.persistent
@@ -290,9 +309,17 @@ def frame_update_callback(scene=None, *unused):
     global nowUpdating
     try:
         nowUpdating = True
+
+        static_tree, framed_tree = get_tree_names()
+        if not static_tree and not framed_tree:
+            return False
+
         reload_scene()
-        update_scene()
-        update_frame()
+        if framed_tree:
+            update_frame(framed_tree)
+        if static_tree:
+            update_scene(static_tree)
+        return True
     finally:
         nowUpdating = False
 
@@ -305,9 +332,12 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
-    needs_update = False
+    static_tree, framed_tree = get_tree_names()
+    if not static_tree:
+        return
+    our_deps = get_dependencies(static_tree)
 
-    our_deps = get_dependencies('NodeTree')
+    needs_update = False
     for update in depsgraph.updates:
         object = update.id
         if isinstance(object, bpy.types.Mesh):
@@ -331,7 +361,9 @@ def scene_update_callback(scene, depsgraph):
     if not nowUpdating:
         try:
             nowUpdating = True
-            update_scene()
+            static_tree, framed_tree = get_tree_names()
+            if static_tree:
+                update_scene(static_tree)
         finally:
             nowUpdating = False
 

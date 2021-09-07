@@ -112,7 +112,7 @@ def eval_type(type):
 
 def eval_category_icon(type):
     type_lut = {
-        'blendermesh': 'MESH_DATA',
+        'blender': 'BLENDER',
         'openvdb': 'FILE_VOLUME',
         'primitive': 'PARTICLES',
         'trimesh': 'MESH_MONKEY',

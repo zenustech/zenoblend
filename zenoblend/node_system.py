@@ -4,7 +4,6 @@ from nodeitems_utils import NodeCategory, NodeItem
 from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
-from .scenario import nowUpdating
 
 
 class ZenoNodeTree(NodeTree):

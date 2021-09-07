@@ -34,4 +34,8 @@ using BlenderInputNamesType = std::set<std::string>;
 using BlenderInputsType = std::map<std::string, std::function<std::shared_ptr<zeno::BlenderAxis>()>>;
 using BlenderOutputsType = std::map<std::string, std::shared_ptr<zeno::BlenderAxis>>;
 
+using LineViewerVertexBufferType = std::vector<std::vector<float>>;
+using LineViewerIndexBufferType = std::vector<std::vector<int>>;
+using LineViewerColorBufferType = std::vector<std::vector<float>>;
+
 }

@@ -1,7 +1,10 @@
 import bpy
 import time
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 from .dll import core
+from .polywire_shaders import vertex_shader, fragment_shader, geometry_shader, preprocessor
 
 # https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
 def _prepare_mesh(obj, depsgraph, no_modifiers=False):
@@ -223,9 +226,46 @@ def graph_deal_output(graphPtr, outputName, is_framed):
     meshToBlender(outMeshPtr, blenderMesh)
 
 
+shader = gpu.types.GPUShader(vertex_shader, fragment_shader, geocode = geometry_shader, defines = preprocessor)
+handler = None
+    
+def draw():
+    shader.bind()
+    matrix = bpy.context.region_data.perspective_matrix
+    shader.uniform_float("ModelViewProjectionMatrix", matrix)
+    shader.uniform_float("lineWidth", 1.2)
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for r in area.regions:
+                if r.type == 'WINDOW':
+                    shader.uniform_float("viewportSize", (r.width, r.height)) 
+                    break
+    gpu.state.depth_test_set('LESS_EQUAL')
+    gpu.state.depth_mask_set(True)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.depth_mask_set(False)
+
+
+def tag_redraw_all_3dviews():
+    for window in bpy.context.window_manager.windows:
+        for area in window.screen.areas:
+            if area.type == 'VIEW_3D':
+                for region in area.regions:
+                    if region.type == 'WINDOW':
+                        region.tag_redraw()
+
+def clear_draw_handler():
+    global handler
+    bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+    handler = None
+    tag_redraw_all_3dviews()
+
 def execute_scene(graph_name, is_framed):
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
+
+    core.graphClearLineBuffer(graphPtr)
 
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr)
@@ -243,6 +283,21 @@ def execute_scene(graph_name, is_framed):
 
     for cb in prepareCallbacks:
         cb()
+
+    line_pos = core.graphGetLineVertexBuffer(graphPtr)
+    line_color = core.graphGetLineColorBuffer(graphPtr)
+    line_indices = core.graphGetLineIndexBuffer(graphPtr)
+   
+    global handler
+    if line_pos:
+        global batch
+        batch = batch_for_shader(shader, 'LINES', {"pos": line_pos, 'color': line_color}, indices=line_indices)
+        if handler:
+            bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+        handler = bpy.types.SpaceView3D.draw_handler_add(draw, (), 'WINDOW', 'POST_VIEW')
+        tag_redraw_all_3dviews()
+    elif handler:
+        clear_draw_handler()
 
 
 def get_dependencies(graph_name):
@@ -367,8 +422,12 @@ def scene_update_callback(scene, depsgraph):
         finally:
             nowUpdating = False
 
+@bpy.app.handlers.persistent
+def load_post_handler(dummy):
+    clear_draw_handler()
 
 def register():
+    bpy.app.handlers.load_post.append(load_post_handler)
     if frame_update_callback not in bpy.app.handlers.frame_change_post:
         bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:

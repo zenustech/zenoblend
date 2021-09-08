@@ -35,8 +35,6 @@ set(ZENO_BENCHMARKING ON CACHE BOOL "For Embeding Usage")
 set(ZENO_HIDE_SYMBOLS ON CACHE BOOL "For Embeding Usage")
 add_subdirectory(external/zeno)
 
-include_directories(include)
-
 add_subdirectory(external/pybind11)
 add_subdirectory(zenoblend)
 

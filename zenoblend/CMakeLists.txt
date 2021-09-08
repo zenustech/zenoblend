@@ -9,5 +9,5 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(pylib_zenoblend PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_include_directories(pylib_zenoblend PRIVATE .)
+target_include_directories(pylib_zenoblend PRIVATE . include)
 target_link_libraries(pylib_zenoblend PRIVATE zeno)

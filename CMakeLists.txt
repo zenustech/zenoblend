@@ -2,11 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(zenoblend LANGUAGES C CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE RelWithDebInfo)
 endif()
-
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if (CMAKE_COMPILER_IS_GNUCC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 endif()
@@ -32,9 +31,8 @@ set(ZENO_ENABLE_PYTHON OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_VISUALIZATION OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_GLOBALSTATE OFF CACHE BOOL "For Embeding Usage")
 set(ZENO_FAULTHANDLER ON CACHE BOOL "For Embeding Usage")
-set(ZENO_BENCHMARKING OFF CACHE BOOL "For Embeding Usage")
+set(ZENO_BENCHMARKING ON CACHE BOOL "For Embeding Usage")
 set(ZENO_HIDE_SYMBOLS ON CACHE BOOL "For Embeding Usage")
-set(EXTENSION_oldzenbase OFF CACHE BOOL "For Embeding Usage")###
 add_subdirectory(external/zeno)
 
 include_directories(include)

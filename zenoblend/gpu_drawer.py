@@ -1,3 +1,5 @@
+# all code below is contributed by @hooyuser:
+
 import bpy
 import time
 import gpu
@@ -12,10 +14,10 @@ shader = None
 batch = None
 
 
-def after_execute():
-    line_pos = core.graphGetLineVertexBuffer(graphPtr)
-    line_color = core.graphGetLineColorBuffer(graphPtr)
-    line_indices = core.graphGetLineIndexBuffer(graphPtr)
+def draw_graph(graphPtr):
+    line_pos = core.graphGetDrawLineVertexBuffer(graphPtr)
+    line_color = core.graphGetDrawLineColorBuffer(graphPtr)
+    line_indices = core.graphGetDrawLineIndexBuffer(graphPtr)
    
     global handler
     if line_pos:

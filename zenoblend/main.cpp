@@ -151,8 +151,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             return mesh;
         };
     });
-    // todo: support input/output volume too
 
+    // todo: support input/output volume too
     m.def("graphGetOutputMesh", []
             ( uintptr_t graphPtr
             , std::string const &objName
@@ -164,46 +164,6 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto const &mesh = outputs.at(objName);
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;
-    });
-
-    py::bind_vector<std::vector<float>>(m, "FloatVec3");
-    py::bind_vector<std::vector<std::vector<float>>>(m, "FloatVec3Array");
-
-    m.def("graphGetLineVertexBuffer", []
-        (uintptr_t graphPtr
-        ) -> std::vector<std::vector<float>>
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        return graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
-    });
-
-    m.def("graphGetLineColorBuffer", []
-        (uintptr_t graphPtr
-        ) -> std::vector<std::vector<float>>
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        return graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
-    });
-
-    py::bind_vector<std::vector<int>>(m, "IntVec2");
-    py::bind_vector<std::vector<std::vector<int>>>(m, "IntVec2Array");
-
-    m.def("graphGetLineIndexBuffer", []
-        (uintptr_t graphPtr
-        ) -> std::vector<std::vector<int>>
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        return graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer");
-    });
-
-    m.def("graphClearLineBuffer", []
-        (uintptr_t graphPtr
-        ) -> void
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer").clear();
-        graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer").clear();
-        graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer").clear();
     });
 
     m.def("meshGetMatrix", []
@@ -403,6 +363,45 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
                 loopColor[i].a = 255;
             }
         }
+    });
+
+    py::bind_vector<std::vector<float>>(m, "FloatVec3");
+    py::bind_vector<std::vector<std::vector<float>>>(m, "FloatVec3Array");
+    py::bind_vector<std::vector<int>>(m, "IntVec2");
+    py::bind_vector<std::vector<std::vector<int>>>(m, "IntVec2Array");
+
+    m.def("graphGetDrawLineVertexBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<float>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        return graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
+    });
+
+    m.def("graphGetDrawLineColorBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<float>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        return graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
+    });
+
+    m.def("graphGetDrawLineIndexBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<int>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        return graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer");
+    });
+
+    m.def("graphClearDrawBuffer", []
+        (uintptr_t graphPtr
+        ) -> void
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer").clear();
+        graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer").clear();
+        graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer").clear();
     });
 
     py::register_exception_translator([](std::exception_ptr p) {

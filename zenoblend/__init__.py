@@ -23,12 +23,14 @@ from . import (
     scenario,
     node_system,
     execute_operator,
+    gpu_drawer,
 )
 
 modules = (
     scenario,
     node_system,
     execute_operator,
+    gpu_drawer,
 )
 
 

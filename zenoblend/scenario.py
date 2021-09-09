@@ -1,10 +1,7 @@
 import bpy
 import time
-import gpu
-from gpu_extras.batch import batch_for_shader
 
 from .dll import core
-from .polywire_shaders import vertex_shader, fragment_shader, geometry_shader, preprocessor
 
 
 # https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
@@ -232,7 +229,7 @@ def execute_scene(graph_name, is_framed):
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
-    core.graphClearLineBuffer(graphPtr)
+    core.graphClearDrawBuffer(graphPtr)
 
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr)
@@ -250,6 +247,9 @@ def execute_scene(graph_name, is_framed):
 
     for cb in prepareCallbacks:
         cb()
+
+    from .gpu_drawer import draw_graph
+    draw_graph(graphPtr)
 
 
 def get_dependencies(graph_name):

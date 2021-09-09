@@ -119,6 +119,7 @@ def eval_category_icon(type):
         'subgraph': 'SYSTEM',
         'portal': 'RNA',
         'control': 'SCRIPT',
+        'bullet': 'RIGID_BODY',
         'Rigid': 'RIGID_BODY',
         'FLIPSolver': 'MATFLUID',
         'FLIP': 'MATFLUID',

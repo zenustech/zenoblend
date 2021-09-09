@@ -14,13 +14,13 @@ class ZenoApplyOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        bpy.context.scene.zeno.executing = True
         data = dump_scene()
         t0 = time.time()
         scenario.load_scene(data)
         if not scenario.frame_update_callback():
             self.report({'ERROR'}, 'No node tree specified! Please check the Zeno Scene panel.')
         else:
+            bpy.context.scene.zeno.executing = True
             dt = time.time() - t0
             self.report({'INFO'}, 'Node tree applied in {:.04f}s'.format(dt))
         return {'FINISHED'}

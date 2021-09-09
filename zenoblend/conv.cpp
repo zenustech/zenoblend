@@ -207,7 +207,7 @@ struct LineViewer : zeno::INode {
         vertexBuffer.reserve(buffersize + vertSize);
         colorBuffer.reserve(buffersize + vertSize);
         auto &vertexPos = verts.values;
-        auto &color = verts.attr<zinc::vec3f>("clr");
+        auto &color = verts.attr<zeno::vec3f>("clr");
         for (int i = 0; i < vertSize; i++) {
             vertexBuffer.emplace_back(std::vector<float>(vertexPos[i].begin(), vertexPos[i].end()));
             colorBuffer.emplace_back(std::vector<float>(color[i].begin(), color[i].end()));

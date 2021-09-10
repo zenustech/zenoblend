@@ -103,7 +103,7 @@ def meshToBlender(meshPtr, mesh):
     for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
         bl_attr_name = 'Zeno_'+attrName
         if bl_attr_name not in mesh.vertex_colors:
-            mesh.vertex_colors.active = mesh.vertex_colors.new(name=bl_attr_name)
+            mesh.vertex_colors.new(name=bl_attr_name)
         loopColorPtr = mesh.vertex_colors[bl_attr_name].data[0].as_pointer() if loopCount else 0
         core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
 

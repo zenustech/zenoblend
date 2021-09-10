@@ -3,7 +3,7 @@
 ################################################################
 
 run: all
-	optirun blender -P blender.py ~/Documents/demovororigid.blend -p 0 0 940 1080
+	optirun blender -P blender.py ~/Documents/testspraypars.blend -p 0 0 940 1080
 
 oldrun: all
 	optirun blender -P blender.py ~/Documents/testvoronoi.blend -p 0 0 940 1080
@@ -18,5 +18,5 @@ dist: all
 	./dist.py
 
 all:
-	cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
-	cmake --build build --parallel
+	cmake -B build
+	cmake --build build --parallel 12

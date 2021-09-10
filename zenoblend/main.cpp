@@ -383,20 +383,21 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         auto const &attr = mesh->loop.attrs.at(attrName);
         auto attrIndex = attr.index();
         auto loopColor = reinterpret_cast<MLoopCol *>(loopColorPtr);
+        const double gamma = 1.0 / 2.2;
         if (attrIndex == 0) {
             #pragma omp parallel for
             for (int i = 0; i < loopCount; i++) {
                 auto color = std::get<0>(attr)[i];
-                loopColor[i].r = static_cast<unsigned char>(zeno::clamp(color[0] * 255, 0, 255));
-                loopColor[i].g = static_cast<unsigned char>(zeno::clamp(color[1] * 255, 0, 255));
-                loopColor[i].b = static_cast<unsigned char>(zeno::clamp(color[2] * 255, 0, 255));
+                loopColor[i].r = static_cast<unsigned char>(zeno::clamp(pow(color[0], gamma) * 255.0, 0.0, 255.0));
+                loopColor[i].g = static_cast<unsigned char>(zeno::clamp(pow(color[1], gamma) * 255.0, 0.0, 255.0));
+                loopColor[i].b = static_cast<unsigned char>(zeno::clamp(pow(color[2], gamma) * 255.0, 0.0, 255.0));
                 loopColor[i].a = 255; // todo: support vec4f attributes in future
             }
         } else if (attrIndex == 1) {
             #pragma omp parallel for
             for (int i = 0; i < loopCount; i++) {
                 auto color = std::get<1>(attr)[i];
-                auto graylevel = static_cast<unsigned char>(zeno::clamp(color * 255, 0, 255));
+                auto graylevel = static_cast<unsigned char>(zeno::clamp(pow(color, gamma) * 255.0, 0.0, 255.0));
                 loopColor[i].r = graylevel;
                 loopColor[i].g = graylevel;
                 loopColor[i].b = graylevel;

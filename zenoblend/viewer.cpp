@@ -6,7 +6,7 @@
 namespace {
 
 
-struct LineViewer : zeno::INode {
+struct BlenderLineViewer : zeno::INode {
     virtual void complete() override {
         if (get_param<bool>("display")) {
             graph->finalOutputNodes.insert(myname);
@@ -45,7 +45,7 @@ struct LineViewer : zeno::INode {
     }
 };
 
-ZENDEFNODE(LineViewer, {
+ZENDEFNODE(BlenderLineViewer, {
     {"prim"},
     {},
     {{"bool", "display", "1"}},

@@ -313,8 +313,8 @@ class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'o
         row.operator("node.zeno_stop", text="Stop")
 
 
-#class ZenoNode_LineViewer(def_node_class('LineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
-#    '''Zeno specialized LineViewer node'''
+#class ZenoNode_BlenderLineViewer(def_node_class('BlenderLineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
+#    '''Zeno specialized BlenderLineViewer node'''
 
 
 

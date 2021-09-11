@@ -201,8 +201,9 @@ struct LineViewer : zeno::INode {
         
         auto verts = prim->verts;
         const size_t vertSize = verts.size();
-        auto &vertexBuffer = graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
-        auto &colorBuffer = graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        auto &vertexBuffer = ud.line_vertices;
+        auto &colorBuffer = ud.line_colors;
         auto buffersize = vertexBuffer.size();
         vertexBuffer.reserve(buffersize + vertSize);
         colorBuffer.reserve(buffersize + vertSize);
@@ -213,7 +214,7 @@ struct LineViewer : zeno::INode {
             colorBuffer.emplace_back(std::vector<float>(color[i].begin(), color[i].end()));
         }
      
-        auto &indexBuffer = graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer");
+        auto &indexBuffer = ud.line_indices;
         auto &lines = prim->lines.values;
         const size_t lineSize = lines.size();
         indexBuffer.reserve(indexBuffer.size() + lineSize);

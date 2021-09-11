@@ -36,7 +36,6 @@ class ZenoStopOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        scenario.clear_draw_handler()
         bpy.context.scene.zeno.executing = False
         if scenario.delete_scene():
             self.report({'INFO'}, 'Node tree stopped')

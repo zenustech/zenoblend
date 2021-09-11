@@ -258,7 +258,8 @@ def tag_redraw_all_3dviews():
 
 def clear_draw_handler():
     global handler
-    bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+    if handler:
+        bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
     handler = None
     tag_redraw_all_3dviews()
 

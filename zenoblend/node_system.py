@@ -230,6 +230,14 @@ def def_node_class(name, inputs, outputs, category):
                 to_socket = to_node.inputs[to_socket]
                 node_tree.links.new(from_socket, to_socket)
 
+    ''' to @hooyuser: seems not working?
+    def update(self):  # rewrite update function
+        if bpy.context.scene.zeno.executing:
+            print('updating by node edit')
+            from . import scenario
+            scenario.frame_update_callback()
+    '''
+
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
     return Def
@@ -250,7 +258,7 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
     def draw_buttons(self, context, layout):
         row = layout.row()
         row.operator("node.zeno_reload", text="Load")
-        #row.operator("node.zeno_goto", text="Goto")
+        #row.operator("node.zeno_goto", text="Goto")  # todo: impl jump to subgraph..
 
     def reinit(self):
         tree = bpy.data.node_groups[self.graph_name]
@@ -303,6 +311,11 @@ class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'o
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
         row.operator("node.zeno_stop", text="Stop")
+
+
+#class ZenoNode_LineViewer(def_node_class('LineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
+#    '''Zeno specialized LineViewer node'''
+
 
 
 def get_descriptors():

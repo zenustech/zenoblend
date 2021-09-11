@@ -3,6 +3,7 @@ import time
 
 from .dll import core
 
+
 # https://github.com/LuxCoreRender/BlendLuxCore/blob/b1ad8e6041bb088e6e4fc53457421b36139d89e7/export/mesh_converter.py
 def _prepare_mesh(obj, depsgraph, no_modifiers=False):
     """
@@ -100,6 +101,7 @@ def meshToBlender(meshPtr, mesh):
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
     core.meshGetLoops(meshPtr, loopPtr, loopCount)
 
+    # loop attributes are considered to be vertex color now...
     for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
         if attrName not in mesh.vertex_colors:
             mesh.vertex_colors.active = mesh.vertex_colors.new(name=attrName)
@@ -227,6 +229,8 @@ def execute_scene(graph_name, is_framed):
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
 
+    core.graphClearDrawBuffer(graphPtr)
+
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr)
     print('graph inputs:', inputNames)
@@ -243,6 +247,9 @@ def execute_scene(graph_name, is_framed):
 
     for cb in prepareCallbacks:
         cb()
+
+    from .gpu_drawer import draw_graph
+    draw_graph(graphPtr)
 
 
 def get_dependencies(graph_name):
@@ -302,7 +309,7 @@ def get_tree_names():
 
 
 @bpy.app.handlers.persistent
-def frame_update_callback(scene=None, *unused):
+def frame_update_callback(*unused):
     if sceneId is None:
         return
 

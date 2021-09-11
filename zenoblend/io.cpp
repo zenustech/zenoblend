@@ -26,15 +26,15 @@ ZENDEFNODE(BlenderText, {
 
 struct BlenderInput : zeno::INode {
     virtual void complete() override {
-        auto &inputNames = graph->getUserData().get<zeno::BlenderInputNamesType>("blender_input_names");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
-        inputNames.insert(objid);
+        ud.input_names.insert(objid);
     }
 
     virtual void apply() override {
-        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
-        auto object = zeno::safe_at(inputs, objid, "blender input")();
+        auto object = zeno::safe_at(ud.inputs, objid, "blender input")();
         set_output2("object", std::move(object));
     }
 };
@@ -55,10 +55,10 @@ struct BlenderOutput : zeno::INode {
     }
 
     virtual void apply() override {
-        auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
         auto object = get_input<zeno::BlenderAxis>("object");
-        outputs[objid] = std::move(object);
+        ud.outputs[objid] = std::move(object);
     }
 };
 

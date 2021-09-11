@@ -2,8 +2,11 @@
 ## DON'T RUN THIS FILE, THIS IS FOR QUICK DEBUG FOR ARCHIBATE ##
 ################################################################
 
+tutorrun: all
+	ZEN_LOGLEVEL=trace optirun blender -P blender.py ~/Documents/sss.blend -p 0 0 940 1080
+
 run: all
-	optirun blender -P blender.py ~/Documents/testlineview.blend -p 0 0 940 1080
+	optirun blender -P blender.py ~/Documents/testlineviewer.blend -p 0 0 940 1080
 
 oldrun: all
 	optirun blender -P blender.py ~/Documents/testspraypars.blend -p 0 0 940 1080

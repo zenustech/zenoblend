@@ -6,10 +6,11 @@
 #include <zeno/utils/safe_at.h>
 
 namespace {
+using namespace zeno;
 
 
 
-struct BlenderText : zeno::INode {
+struct BlenderText : INode {
     virtual void apply() override {
         auto text = get_input2<std::string>("text");
         set_output2("value", std::move(text));
@@ -24,17 +25,17 @@ ZENDEFNODE(BlenderText, {
 });
 
 
-struct BlenderInput : zeno::INode {
+struct BlenderInput : INode {
     virtual void complete() override {
-        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
         ud.input_names.insert(objid);
     }
 
     virtual void apply() override {
-        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
-        auto object = zeno::safe_at(ud.inputs, objid, "blender input")();
+        auto object = safe_at(ud.inputs, objid, "blender input")();
         set_output2("object", std::move(object));
     }
 };
@@ -47,7 +48,7 @@ ZENDEFNODE(BlenderInput, {
 });
 
 
-struct BlenderOutput : zeno::INode {
+struct BlenderOutput : INode {
     virtual void complete() override {
         if (get_param<bool>("active")) {
             graph->finalOutputNodes.insert(myname);
@@ -55,9 +56,9 @@ struct BlenderOutput : zeno::INode {
     }
 
     virtual void apply() override {
-        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
-        auto object = get_input<zeno::BlenderAxis>("object");
+        auto object = get_input<BlenderAxis>("object");
         ud.outputs[objid] = std::move(object);
     }
 };

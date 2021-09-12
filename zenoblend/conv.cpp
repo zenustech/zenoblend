@@ -4,24 +4,25 @@
 #include <zeno/types/NumericObject.h>
 
 namespace {
+using namespace zeno;
 
 
-struct GetBlenderObjectAxes : zeno::INode {
+struct GetBlenderObjectAxes : INode {
     virtual void apply() override {
-        auto object = get_input<zeno::BlenderAxis>("object");
+        auto object = get_input<BlenderAxis>("object");
         auto m = object->matrix;
 
-        auto origin = std::make_shared<zeno::NumericObject>();
-        origin->set(zeno::vec3f(m[0][3], m[1][3], m[2][3]));
+        auto origin = std::make_shared<NumericObject>();
+        origin->set(vec3f(m[0][3], m[1][3], m[2][3]));
 
-        auto axisX = std::make_shared<zeno::NumericObject>();
-        axisX->set(zeno::vec3f(m[0][0], m[1][0], m[2][0]));
+        auto axisX = std::make_shared<NumericObject>();
+        axisX->set(vec3f(m[0][0], m[1][0], m[2][0]));
 
-        auto axisY = std::make_shared<zeno::NumericObject>();
-        axisY->set(zeno::vec3f(m[0][1], m[1][1], m[2][1]));
+        auto axisY = std::make_shared<NumericObject>();
+        axisY->set(vec3f(m[0][1], m[1][1], m[2][1]));
 
-        auto axisZ = std::make_shared<zeno::NumericObject>();
-        axisZ->set(zeno::vec3f(m[0][2], m[1][2], m[2][2]));
+        auto axisZ = std::make_shared<NumericObject>();
+        axisZ->set(vec3f(m[0][2], m[1][2], m[2][2]));
 
         set_output("origin", std::move(origin));
         set_output("axisX", std::move(axisX));
@@ -38,16 +39,16 @@ ZENDEFNODE(GetBlenderObjectAxes, {
 });
 
 
-struct BMeshToPrimitive : zeno::INode {
+struct BMeshToPrimitive : INode {
     virtual void apply() override {
-        auto mesh = get_input<zeno::BlenderMesh>("mesh");
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto mesh = get_input<BlenderMesh>("mesh");
+        auto prim = std::make_shared<PrimitiveObject>();
         auto allow_quads = get_param<bool>("allow_quads");
         auto do_transform = get_param<bool>("do_transform");
 
         // todo: support **input** blender attributes
         prim->resize(mesh->vert.size());
-        auto &pos = prim->add_attr<zeno::vec3f>("pos");
+        auto &pos = prim->add_attr<vec3f>("pos");
         if (do_transform) {
             auto m = mesh->matrix;
             #pragma omp parallel for
@@ -100,14 +101,14 @@ ZENDEFNODE(BMeshToPrimitive, {
 });
 
 
-struct PrimitiveToBMesh : zeno::INode {
+struct PrimitiveToBMesh : INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto mesh = std::make_shared<zeno::BlenderMesh>();
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto mesh = std::make_shared<BlenderMesh>();
         // todo: support exporting transform matrix (for empty axis) too?
 
         mesh->vert.resize(prim->size());
-        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &pos = prim->attr<vec3f>("pos");
         for (int i = 0; i < prim->size(); i++) {
             mesh->vert[i] = pos[i];
         }
@@ -259,12 +260,12 @@ static void decompose_matrix(const Matrix4x4 &m, Vector3f *T,
     *S = Matrix4x4::Mul(Inverse(R), M);
 }
 
-struct BAxisExtract : zeno::INode {
+struct BAxisExtract : INode {
     virtual void apply() override {
-        auto axis = get_input<zeno::BlenderAxis>("axis");
-        auto translation = std::make_shared<zeno::NumericObject>();
-        auto quaternion = std::make_shared<zeno::NumericObject>();
-        auto scaling = std::make_shared<zeno::NumericObject>();
+        auto axis = get_input<BlenderAxis>("axis");
+        auto translation = std::make_shared<NumericObject>();
+        auto quaternion = std::make_shared<NumericObject>();
+        auto scaling = std::make_shared<NumericObject>();
         trans->matrix = mesh->matrix;
 
         set_output("trans", std::move(trans));

@@ -187,6 +187,36 @@ ZENDEFNODE(PrimitiveToBMesh, {
 });
 
 
+struct ConvertTo_BlenderMesh_PrimitiveObject : BMeshToPrimitive {
+    virtual void apply() override {
+        BMeshToPrimitive::apply();
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _BlenderMesh_PrimitiveObject, typeid(BlenderMesh).name(), typeid(PrimitiveObject).name())({
+        {"mesh", "prim"},
+        {},
+        {},
+        {"blender"},
+});
+
+
+struct ConvertTo_PrimitiveObject_BlenderMesh : PrimitiveToBMesh {
+    virtual void apply() override {
+        PrimitiveToBMesh::apply();
+        get_input<BlenderMesh>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("mesh"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_BlenderMesh, typeid(PrimitiveObject).name(), typeid(BlenderMesh).name())({
+        {"prim", "mesh"},
+        {},
+        {},
+        {"blender"},
+});
+
+
 /*
 static void decompose_matrix(const Matrix4x4 &m, Vector3f *T,
                                   Quaternion *Rquat, Matrix4x4 *S) {

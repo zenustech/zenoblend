@@ -346,7 +346,8 @@ node_classes = []
 node_pre_categories = {}
 
 
-def decsriptor_to_class(title, inputs, outputs, category):
+def descriptor_to_class(desc):
+    title, inputs, outputs, category = desc
     Def = globals().get('ZenoNode_' + title, None)
     if Def is None:  # non-specialized
         return def_node_class(title, inputs, outputs, category)

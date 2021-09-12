@@ -78,7 +78,7 @@ struct BlenderInputPrimitive : INode {
         auto objid = get_input2<std::string>("objid");
         auto object = safe_at(ud.inputs, objid, "blender input")();
 
-        auto mesh = smart_any_cast<BlenderMesh>(object);
+        auto mesh = safe_dynamic_cast<BlenderMesh>(object);
         auto prim = std::make_shared<PrimitiveObject>();
         auto allow_quads = get_param<bool>("allow_quads");
         auto do_transform = get_param<bool>("do_transform");
@@ -230,9 +230,8 @@ ZENDEFNODE(BlenderOutputPrimitive, {
     {"bool", "has_vert_color", "0"},
     {"bool", "has_vert_attr", "0"},
     {"bool", "has_face_attr", "0"},
+    {"bool", "active", "1"},
     },
-    {},
-    {{"bool", "active", "1"}},
     {"blender"},
 });
 

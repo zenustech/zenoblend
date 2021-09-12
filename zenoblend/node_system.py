@@ -277,8 +277,8 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
-    '''Zeno specialized BlenderText node'''
+class ZenoNode_BlenderInputText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
+    '''Zeno specialized BlenderInputText node'''
     text: bpy.props.StringProperty()
 
     bpy_data_inputs = {'text': 'texts'}  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically
@@ -288,8 +288,8 @@ class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value'
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 
-class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 'object', '')], 'blender')):
-    '''Zeno specialized BlenderInput node'''
+class ZenoNode_BlenderInputPrimitive(def_node_class()):
+    '''Zeno specialized BlenderInputPrimitive node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
@@ -299,8 +299,8 @@ class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
-class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', ''), ('bool', 'active:', '1')], [], 'blender')):
-    '''Zeno specialized BlenderOutput node'''
+class ZenoNode_BlenderOutputPrimitive(def_node_class()):
+    '''Zeno specialized BlenderOutputPrimitive node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}

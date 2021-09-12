@@ -18,7 +18,7 @@ struct BlenderInputText : INode {
 };
 
 ZENDEFNODE(BlenderInputText, {
-    {{"string", "text", "DontUseThisNodeDirectly"}},
+    {},
     {{"string", "value"}},
     {},
     {"blender"},
@@ -59,7 +59,7 @@ struct BlenderInputAxes : INode {
 };
 
 ZENDEFNODE(BlenderInputAxes, {
-    {{"string", "objid", "DontUseThisNodeDirectly"}},
+    {},
     {{"vec3f", "origin"}, {"vec3f", "axisX"}, {"vec3f", "axisY"}, {"vec3f", "axisZ"}},
     {},
     {"blender"},
@@ -132,8 +132,8 @@ struct BlenderInputPrimitive : INode {
 };
 
 ZENDEFNODE(BlenderInputPrimitive, {
-    {{"string", "objid", "DontUseThisNodeDirectly"}},
-    {{"BlenderAxis", "object"}},
+    {},
+    {"prim"},
     {},
     {"blender"},
 });
@@ -223,7 +223,7 @@ struct BlenderOutputPrimitive : INode {
 };
 
 ZENDEFNODE(BlenderOutputPrimitive, {
-    {"prim", {"string", "objid", "DontUseThisNodeDirectly"}},
+    {"prim"},
     {"mesh"},
     {
     {"bool", "is_smooth", "0"},

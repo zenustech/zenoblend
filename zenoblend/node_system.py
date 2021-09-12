@@ -277,8 +277,8 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-class ZenoNode_BlenderInputText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
-    '''Zeno specialized BlenderInputText node'''
+class ZenoNode_BlenderInputText:
+    '''Zeno specialized mixin BlenderInputText node'''
     text: bpy.props.StringProperty()
 
     bpy_data_inputs = {'text': 'texts'}  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically
@@ -288,8 +288,8 @@ class ZenoNode_BlenderInputText(def_node_class('BlenderText', [], [('string', 'v
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 
-class ZenoNode_BlenderInputPrimitive(def_node_class()):
-    '''Zeno specialized BlenderInputPrimitive node'''
+class ZenoNode_BlenderInputPrimitive:
+    '''Zeno specialized mixin BlenderInputPrimitive node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
@@ -299,8 +299,8 @@ class ZenoNode_BlenderInputPrimitive(def_node_class()):
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
-class ZenoNode_BlenderOutputPrimitive(def_node_class()):
-    '''Zeno specialized BlenderOutputPrimitive node'''
+class ZenoNode_BlenderOutputPrimitive:
+    '''Zeno specialized mixin BlenderOutputPrimitive node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
@@ -346,16 +346,30 @@ node_classes = []
 node_pre_categories = {}
 
 
+def decsriptor_to_class(title, inputs, outputs, category):
+    Def = globals().get('ZenoNode_' + title, None)
+    if Def is None:  # non-specialized
+        return def_node_class(title, inputs, outputs, category)
+
+    elif not hasattr(Def, 'zeno_type'):  # mixin-specialized
+        OldDef = def_node_class(title, inputs, outputs, category)
+        class NewDef(OldDef, Def):
+            pass
+        NewDef.__name__ = OldDef.__name__
+        return NewDef
+
+    else:  # fully-specialized
+        return Def
+
+
 def init_node_classes():
     node_descriptors = get_descriptors()
 
     node_classes.clear()
     node_pre_categories.clear()
 
-    for title, inputs, outputs, category in node_descriptors:
-        Def = globals().get('ZenoNode_' + title, None)
-        if Def is None:
-            Def = def_node_class(title, inputs, outputs, category)
+    for desc in node_descriptors:
+        Def = descriptor_to_class(desc)
         node_classes.append(Def)
         if title == 'Subgraph': continue
         node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)

@@ -1,3 +1,4 @@
+#if 0
 #include <zeno/zeno.h>
 #include "BlenderMesh.h"
 #include <zeno/types/PrimitiveObject.h>
@@ -281,3 +282,4 @@ ZENDEFNODE(BAxisExtract, {
 
 
 }
+#endif

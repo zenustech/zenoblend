@@ -58,13 +58,13 @@ struct BlenderOutput : INode {
     virtual void apply() override {
         auto &ud = graph->getUserData().get<BlenderData>("blender_data");
         auto objid = get_input2<std::string>("objid");
-        auto object = get_input<BlenderAxis>("object");
+        auto object = get_input<BlenderMesh>("object");
         ud.outputs[objid] = std::move(object);
     }
 };
 
 ZENDEFNODE(BlenderOutput, {
-    {{"string", "objid", "DontUseThisNodeDirectly"}, {"BlenderAxis", "object"}},
+    {{"string", "objid", "DontUseThisNodeDirectly"}, {"BlenderMesh", "object"}},
     {},
     {{"bool", "active", "1"}},
     {"blender"},

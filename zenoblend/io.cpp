@@ -33,7 +33,10 @@ struct BlenderInputAxes : INode {
     }
 
     virtual void apply() override {
-        auto object = get_input<BlenderAxis>("object");
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
+        auto objid = get_input2<std::string>("objid");
+        auto object = safe_at(ud.inputs, objid, "blender input")();
+
         auto m = object->matrix;
 
         auto origin = std::make_shared<NumericObject>();
@@ -215,9 +218,7 @@ struct BlenderOutputPrimitive : INode {
             });
         }
 
-        set_output("mesh", std::move(mesh));
-
-        ud.outputs[objid] = std::move(object);
+        ud.outputs[objid] = std::move(mesh);
     }
 };
 

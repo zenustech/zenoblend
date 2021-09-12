@@ -372,7 +372,7 @@ def init_node_classes():
     for desc in node_descriptors:
         Def = descriptor_to_class(desc)
         node_classes.append(Def)
-        if title == 'Subgraph': continue
+        if desc[0] == 'Subgraph': continue
         node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)
 
     node_categories = []

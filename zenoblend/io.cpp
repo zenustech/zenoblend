@@ -134,7 +134,7 @@ struct BlenderInputPrimitive : INode {
 ZENDEFNODE(BlenderInputPrimitive, {
     {},
     {"prim"},
-    {},
+    {{"bool", "allow_quads", "0"}, {"bool", "do_transform", "1"}},
     {"blender"},
 });
 

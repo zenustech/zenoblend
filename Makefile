@@ -3,7 +3,13 @@
 ################################################################
 
 run: all
-	optirun blender -P blender.py ~/Documents/testlineview.blend -p 0 0 940 1080
+	ZEN_LOGLEVEL=trace optirun blender -P blender.py ~/Documents/voro.blend -p 0 0 940 1080
+
+debug: all
+	ZEN_LOGLEVEL=trace gdb blender -ex 'r -P blender.py ~/Documents/voro.blend -p 0 0 940 1080'
+
+lastrun: all
+	optirun blender -P blender.py ~/Documents/testlineviewer.blend -p 0 0 940 1080
 
 oldrun: all
 	optirun blender -P blender.py ~/Documents/testspraypars.blend -p 0 0 940 1080

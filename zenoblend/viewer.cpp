@@ -4,9 +4,10 @@
 #include <zeno/types/NumericObject.h>
 
 namespace {
+using namespace zeno;
 
 
-struct BlenderLineViewer : zeno::INode {
+struct BlenderLineViewer : INode {
     virtual void complete() override {
         if (get_param<bool>("display")) {
             graph->finalOutputNodes.insert(myname);
@@ -17,18 +18,18 @@ struct BlenderLineViewer : zeno::INode {
         if (!has_input("prim") || !get_param<bool>("display")) {
             return;
         }
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
         
         auto verts = prim->verts;
         const size_t vertSize = verts.size();
-        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
         auto &vertexBuffer = ud.line_vertices;
         auto &colorBuffer = ud.line_colors;
         auto buffersize = vertexBuffer.size();
         vertexBuffer.reserve(buffersize + vertSize);
         colorBuffer.reserve(buffersize + vertSize);
         auto &vertexPos = verts.values;
-        auto &color = verts.attr<zeno::vec3f>("clr");
+        auto &color = verts.attr<vec3f>("clr");
         for (int i = 0; i < vertSize; i++) {
             vertexBuffer.emplace_back(std::vector<float>(vertexPos[i].begin(), vertexPos[i].end()));
             colorBuffer.emplace_back(std::vector<float>(color[i].begin(), color[i].end()));

@@ -287,6 +287,15 @@ class ZenoNode_BlenderInputText:
         row = layout.row()
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
+class ZenoNode_BlenderInputAxes:
+    '''Zeno specialized mixin BlenderInputPrimitive node'''
+    objid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 class ZenoNode_BlenderInputPrimitive:
     '''Zeno specialized mixin BlenderInputPrimitive node'''

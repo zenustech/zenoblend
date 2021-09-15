@@ -1,27 +1,29 @@
+#if 0
 #include <zeno/zeno.h>
 #include "BlenderMesh.h"
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 
 namespace {
+using namespace zeno;
 
 
-struct GetBlenderObjectAxes : zeno::INode {
+struct GetBlenderObjectAxes : INode {
     virtual void apply() override {
-        auto object = get_input<zeno::BlenderAxis>("object");
+        auto object = get_input<BlenderAxis>("object");
         auto m = object->matrix;
 
-        auto origin = std::make_shared<zeno::NumericObject>();
-        origin->set(zeno::vec3f(m[0][3], m[1][3], m[2][3]));
+        auto origin = std::make_shared<NumericObject>();
+        origin->set(vec3f(m[0][3], m[1][3], m[2][3]));
 
-        auto axisX = std::make_shared<zeno::NumericObject>();
-        axisX->set(zeno::vec3f(m[0][0], m[1][0], m[2][0]));
+        auto axisX = std::make_shared<NumericObject>();
+        axisX->set(vec3f(m[0][0], m[1][0], m[2][0]));
 
-        auto axisY = std::make_shared<zeno::NumericObject>();
-        axisY->set(zeno::vec3f(m[0][1], m[1][1], m[2][1]));
+        auto axisY = std::make_shared<NumericObject>();
+        axisY->set(vec3f(m[0][1], m[1][1], m[2][1]));
 
-        auto axisZ = std::make_shared<zeno::NumericObject>();
-        axisZ->set(zeno::vec3f(m[0][2], m[1][2], m[2][2]));
+        auto axisZ = std::make_shared<NumericObject>();
+        axisZ->set(vec3f(m[0][2], m[1][2], m[2][2]));
 
         set_output("origin", std::move(origin));
         set_output("axisX", std::move(axisX));
@@ -38,16 +40,16 @@ ZENDEFNODE(GetBlenderObjectAxes, {
 });
 
 
-struct BMeshToPrimitive : zeno::INode {
+struct BMeshToPrimitive : INode {
     virtual void apply() override {
-        auto mesh = get_input<zeno::BlenderMesh>("mesh");
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto mesh = get_input<BlenderMesh>("mesh");
+        auto prim = std::make_shared<PrimitiveObject>();
         auto allow_quads = get_param<bool>("allow_quads");
         auto do_transform = get_param<bool>("do_transform");
 
         // todo: support **input** blender attributes
         prim->resize(mesh->vert.size());
-        auto &pos = prim->add_attr<zeno::vec3f>("pos");
+        auto &pos = prim->add_attr<vec3f>("pos");
         if (do_transform) {
             auto m = mesh->matrix;
             #pragma omp parallel for
@@ -100,14 +102,14 @@ ZENDEFNODE(BMeshToPrimitive, {
 });
 
 
-struct PrimitiveToBMesh : zeno::INode {
+struct PrimitiveToBMesh : INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto mesh = std::make_shared<zeno::BlenderMesh>();
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto mesh = std::make_shared<BlenderMesh>();
         // todo: support exporting transform matrix (for empty axis) too?
 
         mesh->vert.resize(prim->size());
-        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &pos = prim->attr<vec3f>("pos");
         for (int i = 0; i < prim->size(); i++) {
             mesh->vert[i] = pos[i];
         }
@@ -186,50 +188,35 @@ ZENDEFNODE(PrimitiveToBMesh, {
     {"blender"},
 });
 
-struct LineViewer : zeno::INode {
-    virtual void complete() override {
-        if (get_param<bool>("display")) {
-            graph->finalOutputNodes.insert(myname);
-        }
-    }
 
+struct ConvertTo_BlenderMesh_PrimitiveObject : BMeshToPrimitive {
     virtual void apply() override {
-        if (!has_input("prim") || !get_param<bool>("display")) {
-            return;
-        }
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
-        
-        auto verts = prim->verts;
-        const size_t vertSize = verts.size();
-        auto &vertexBuffer = graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
-        auto &colorBuffer = graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
-        auto buffersize = vertexBuffer.size();
-        vertexBuffer.reserve(buffersize + vertSize);
-        colorBuffer.reserve(buffersize + vertSize);
-        auto &vertexPos = verts.values;
-        auto &color = verts.attr<zinc::vec3f>("clr");
-        for (int i = 0; i < vertSize; i++) {
-            vertexBuffer.emplace_back(std::vector<float>(vertexPos[i].begin(), vertexPos[i].end()));
-            colorBuffer.emplace_back(std::vector<float>(color[i].begin(), color[i].end()));
-        }
-     
-        auto &indexBuffer = graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer");
-        auto &lines = prim->lines.values;
-        const size_t lineSize = lines.size();
-        indexBuffer.reserve(indexBuffer.size() + lineSize);
-        for (int i = 0; i < lineSize; i++) {
-            std::vector<int> line { lines[i][0] + static_cast<int>(buffersize), lines[i][1] + static_cast<int>(buffersize) };
-            indexBuffer.emplace_back(std::move(line));
-        }
+        BMeshToPrimitive::apply();
+        get_input<PrimitiveObject>("prim")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("prim"))).get());
     }
 };
 
-ZENDEFNODE(LineViewer, {
-    {"prim"},
-    {},
-    {{"bool", "display", "1"}},
-    {"blender"},
-    });
+ZENO_DEFOVERLOADNODE(ConvertTo, _BlenderMesh_PrimitiveObject, typeid(BlenderMesh).name(), typeid(PrimitiveObject).name())({
+        {"mesh", "prim"},
+        {},
+        {},
+        {"blender"},
+});
+
+
+struct ConvertTo_PrimitiveObject_BlenderMesh : PrimitiveToBMesh {
+    virtual void apply() override {
+        PrimitiveToBMesh::apply();
+        get_input<BlenderMesh>("mesh")->move_assign(std::move(smart_any_cast<std::shared_ptr<IObject>>(outputs.at("mesh"))).get());
+    }
+};
+
+ZENO_DEFOVERLOADNODE(ConvertTo, _PrimitiveObject_BlenderMesh, typeid(PrimitiveObject).name(), typeid(BlenderMesh).name())({
+        {"prim", "mesh"},
+        {},
+        {},
+        {"blender"},
+});
 
 
 /*
@@ -274,12 +261,12 @@ static void decompose_matrix(const Matrix4x4 &m, Vector3f *T,
     *S = Matrix4x4::Mul(Inverse(R), M);
 }
 
-struct BAxisExtract : zeno::INode {
+struct BAxisExtract : INode {
     virtual void apply() override {
-        auto axis = get_input<zeno::BlenderAxis>("axis");
-        auto translation = std::make_shared<zeno::NumericObject>();
-        auto quaternion = std::make_shared<zeno::NumericObject>();
-        auto scaling = std::make_shared<zeno::NumericObject>();
+        auto axis = get_input<BlenderAxis>("axis");
+        auto translation = std::make_shared<NumericObject>();
+        auto quaternion = std::make_shared<NumericObject>();
+        auto scaling = std::make_shared<NumericObject>();
         trans->matrix = mesh->matrix;
 
         set_output("trans", std::move(trans));
@@ -295,3 +282,4 @@ ZENDEFNODE(BAxisExtract, {
 
 
 }
+#endif

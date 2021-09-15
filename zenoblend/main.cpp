@@ -74,8 +74,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto &inputNames = graph->getUserData().get<zeno::BlenderInputNamesType>("blender_input_names");
-        return inputNames;
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        return ud.input_names;
     });
 
     m.def("graphGetOutputNames", []
@@ -83,9 +83,9 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> std::set<std::string>
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
         std::set<std::string> keys;
-        for (auto const &[key, val]: outputs) {
+        for (auto const &[key, val]: ud.outputs) {
             keys.insert(key);
         }
         return keys;
@@ -106,9 +106,9 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
 
-        inputs[objName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
+        ud.inputs[objName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
             auto axis = std::make_shared<zeno::BlenderAxis>();
             axis->matrix = matrix;
             return axis;
@@ -128,9 +128,9 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto &inputs = graph->getUserData().get<zeno::BlenderInputsType>("blender_inputs");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
 
-        inputs[objName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
+        ud.inputs[objName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
             auto mesh = std::make_shared<zeno::BlenderMesh>();
             mesh->matrix = matrix;
             mesh->vert.resize(vertCount);
@@ -151,59 +151,19 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             return mesh;
         };
     });
-    // todo: support input/output volume too
 
+    // todo: support input/output volume too
     m.def("graphGetOutputMesh", []
             ( uintptr_t graphPtr
             , std::string const &objName
             ) -> uintptr_t
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
-        auto &outputs = graph->getUserData().get<zeno::BlenderOutputsType>("blender_outputs");
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
 
-        auto const &mesh = outputs.at(objName);
+        auto const &mesh = ud.outputs.at(objName);
         auto meshPtr = reinterpret_cast<uintptr_t>(mesh.get());
         return meshPtr;
-    });
-
-    py::bind_vector<std::vector<float>>(m, "FloatVec3");
-    py::bind_vector<std::vector<std::vector<float>>>(m, "FloatVec3Array");
-
-    m.def("graphGetLineVertexBuffer", []
-        (uintptr_t graphPtr
-        ) -> std::vector<std::vector<float>>
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        return graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer");
-    });
-
-    m.def("graphGetLineColorBuffer", []
-        (uintptr_t graphPtr
-        ) -> std::vector<std::vector<float>>
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        return graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer");
-    });
-
-    py::bind_vector<std::vector<int>>(m, "IntVec2");
-    py::bind_vector<std::vector<std::vector<int>>>(m, "IntVec2Array");
-
-    m.def("graphGetLineIndexBuffer", []
-        (uintptr_t graphPtr
-        ) -> std::vector<std::vector<int>>
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        return graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer");
-    });
-
-    m.def("graphClearLineBuffer", []
-        (uintptr_t graphPtr
-        ) -> void
-    {
-        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
-        graph->getUserData().get<zeno::LineViewerVertexBufferType>("line_vertex_buffer").clear();
-        graph->getUserData().get<zeno::LineViewerColorBufferType>("line_color_buffer").clear();
-        graph->getUserData().get<zeno::LineViewerIndexBufferType>("line_index_buffer").clear();
     });
 
     m.def("meshGetMatrix", []
@@ -404,6 +364,49 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
                 loopColor[i].a = 255;
             }
         }
+    });
+
+    py::bind_vector<std::vector<float>>(m, "FloatVec3");
+    py::bind_vector<std::vector<std::vector<float>>>(m, "FloatVec3Array");
+    py::bind_vector<std::vector<int>>(m, "IntVec2");
+    py::bind_vector<std::vector<std::vector<int>>>(m, "IntVec2Array");
+
+    m.def("graphGetDrawLineVertexBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<float>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        return ud.line_vertices;
+    });
+
+    m.def("graphGetDrawLineColorBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<float>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        return ud.line_colors;
+    });
+
+    m.def("graphGetDrawLineIndexBuffer", []
+        (uintptr_t graphPtr
+        ) -> std::vector<std::vector<int>>
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        return ud.line_indices;
+    });
+
+    m.def("graphClearDrawBuffer", []
+        (uintptr_t graphPtr
+        ) -> void
+    {
+        auto graph = reinterpret_cast<zeno::Graph*>(graphPtr);
+        auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
+        ud.line_vertices.clear();
+        ud.line_colors.clear();
+        ud.line_indices.clear();
     });
 
     py::register_exception_translator([](std::exception_ptr p) {

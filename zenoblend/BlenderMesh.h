@@ -30,12 +30,14 @@ struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis>, PolyMesh {
     bool is_smooth = false;
 };
 
-using BlenderInputNamesType = std::set<std::string>;
-using BlenderInputsType = std::map<std::string, std::function<std::shared_ptr<zeno::BlenderAxis>()>>;
-using BlenderOutputsType = std::map<std::string, std::shared_ptr<zeno::BlenderAxis>>;
+struct BlenderData {
+    std::set<std::string> input_names;
+    std::map<std::string, std::function<std::shared_ptr<BlenderAxis>()>> inputs;
+    std::map<std::string, std::shared_ptr<BlenderAxis>> outputs;
 
-using LineViewerVertexBufferType = std::vector<std::vector<float>>;
-using LineViewerIndexBufferType = std::vector<std::vector<int>>;
-using LineViewerColorBufferType = std::vector<std::vector<float>>;
+    std::vector<std::vector<float>> line_vertices;
+    std::vector<std::vector<int>> line_indices;
+    std::vector<std::vector<float>> line_colors;
+};
 
 }

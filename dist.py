@@ -21,6 +21,9 @@ print('==> release version={} os_name={}'.format(version, os_name))
 if os_name == 'linux':
     print('==> copying linux shared libraries')
     subprocess.check_call([sys.executable, 'scripts/linux_dist_helper.py'])
+elif os_name == 'windows':
+    print('==> removing windows static libraries')
+    subprocess.check_call([sys.executable, 'scripts/windows_dist_helper.py'])
 
 print('==> creating packaging directory')
 shutil.rmtree('dist', ignore_errors=True)

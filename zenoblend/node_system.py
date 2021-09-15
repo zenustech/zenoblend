@@ -230,6 +230,14 @@ def def_node_class(name, inputs, outputs, category):
                 to_socket = to_node.inputs[to_socket]
                 node_tree.links.new(from_socket, to_socket)
 
+    ''' to @hooyuser: seems not working?
+    def update(self):  # rewrite update function
+        if bpy.context.scene.zeno.executing:
+            print('updating by node edit')
+            from . import scenario
+            scenario.frame_update_callback()
+    '''
+
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
     return Def
@@ -250,7 +258,7 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
     def draw_buttons(self, context, layout):
         row = layout.row()
         row.operator("node.zeno_reload", text="Load")
-        #row.operator("node.zeno_goto", text="Goto")
+        #row.operator("node.zeno_goto", text="Goto")  # todo: impl jump to subgraph..
 
     def reinit(self):
         tree = bpy.data.node_groups[self.graph_name]
@@ -269,8 +277,8 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
         row.operator("node.zeno_stop", text="Stop")
 
 
-class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value', '')], 'blender')):
-    '''Zeno specialized BlenderText node'''
+class ZenoNode_BlenderInputText:
+    '''Zeno specialized mixin BlenderInputText node'''
     text: bpy.props.StringProperty()
 
     bpy_data_inputs = {'text': 'texts'}  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically
@@ -280,8 +288,8 @@ class ZenoNode_BlenderText(def_node_class('BlenderText', [], [('string', 'value'
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 
-class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 'object', '')], 'blender')):
-    '''Zeno specialized BlenderInput node'''
+class ZenoNode_BlenderInputPrimitive:
+    '''Zeno specialized mixin BlenderInputPrimitive node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
@@ -291,8 +299,8 @@ class ZenoNode_BlenderInput(def_node_class('BlenderInput', [], [('BlenderAxis', 
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
-class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'object', ''), ('bool', 'active:', '1')], [], 'blender')):
-    '''Zeno specialized BlenderOutput node'''
+class ZenoNode_BlenderOutputPrimitive:
+    '''Zeno specialized mixin BlenderOutputPrimitive node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
@@ -304,13 +312,9 @@ class ZenoNode_BlenderOutput(def_node_class('BlenderOutput', [('BlenderAxis', 'o
         row.operator("node.zeno_apply", text="Apply")
         row.operator("node.zeno_stop", text="Stop")
 
-class ZenoNode_LineViewer(def_node_class('LineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
-    '''Zeno specialized LineViewer node'''
-   
-    def update(self):  # rewrite update function
-        if bpy.context.scene.zeno.executing:
-            bpy.ops.node.zeno_apply('EXEC_DEFAULT')
 
+#class ZenoNode_BlenderLineViewer(def_node_class('BlenderLineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
+#    '''Zeno specialized BlenderLineViewer node'''
 
 
 
@@ -342,18 +346,33 @@ node_classes = []
 node_pre_categories = {}
 
 
+def descriptor_to_class(desc):
+    title, inputs, outputs, category = desc
+    Def = globals().get('ZenoNode_' + title, None)
+    if Def is None:  # non-specialized
+        return def_node_class(title, inputs, outputs, category)
+
+    elif not hasattr(Def, 'zeno_type'):  # mixin-specialized
+        OldDef = def_node_class(title, inputs, outputs, category)
+        class NewDef(OldDef, Def):
+            pass
+        NewDef.__name__ = OldDef.__name__
+        return NewDef
+
+    else:  # fully-specialized
+        return Def
+
+
 def init_node_classes():
     node_descriptors = get_descriptors()
 
     node_classes.clear()
     node_pre_categories.clear()
 
-    for title, inputs, outputs, category in node_descriptors:
-        Def = globals().get('ZenoNode_' + title, None)
-        if Def is None:
-            Def = def_node_class(title, inputs, outputs, category)
+    for desc in node_descriptors:
+        Def = descriptor_to_class(desc)
         node_classes.append(Def)
-        if title == 'Subgraph': continue
+        if desc[0] == 'Subgraph': continue
         node_pre_categories.setdefault(Def.zeno_category, []).append(Def.__name__)
 
     node_categories = []

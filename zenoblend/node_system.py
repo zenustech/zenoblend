@@ -12,6 +12,8 @@ class ZenoNodeTree(NodeTree):
     bl_label = "Zeno Node Tree"
     bl_icon = 'NODETREE'
 
+    zeno_cached: bpy.props.BoolProperty(name="Cached", default=False, description='Cache frames')
+
 
 class ZenoNodeCategory(NodeCategory):
     @classmethod

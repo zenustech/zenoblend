@@ -2,6 +2,7 @@ import bpy
 import time
 from . import scenario
 
+tree_name_dict = dict()
 
 
 class ZenoApplyOperator(bpy.types.Operator):
@@ -70,12 +71,90 @@ def draw_menu(self, context):
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
+# class ZenoSwitchNodeTree(bpy.types.Operator):
+#     """Switch to exact layout, user friendly way"""
+#     bl_idname = "node.zeno_switch_node_tree"
+#     bl_label = "switch node tree"
+#     bl_options = {'REGISTER', 'UNDO'}
+
+#     node_tree_name: bpy.props.StringProperty(
+#         default='', name='node_tree_name',
+#         description='node tree name to change node tree by button')
+
+#     @classmethod
+#     def poll(cls, context):
+#         if context.space_data.type == 'NODE_EDITOR':
+#             if bpy.context.space_data.tree_type == 'ZenoNodeTree':
+#                 return True
+#         else:
+#             return False
+
+#     def execute(self, context):
+#         name = bpy.data.node_groups.get(self.node_tree_name)
+#         if name:
+#             context.space_data.path.start(name)
+#         else:
+#             return {'CANCELLED'}
+#         return {'FINISHED'}
+
+def update_node_tree_list(self, context):
+    tree_index = bpy.context.scene.zeno.ui_list_selected_tree
+    #print(tree_index)
+    #print(bpy.context.space_data.tree_type)
+    global tree_name_dict
+    name = bpy.data.node_groups.get(tree_name_dict[str(tree_index)])
+    if name:
+        context.space_data.path.start(name)
+    #print(nd[str(tree_index)])
+
+
 class ZenoSceneProperties(bpy.types.PropertyGroup):
     node_tree_static: bpy.props.StringProperty(name='Static')
     node_tree_framed: bpy.props.StringProperty(name='Framed')
     frame_start: bpy.props.IntProperty(name='Start', default=1)
     frame_end: bpy.props.IntProperty(name='End', default=1000)
     executing: bpy.props.BoolProperty(name='is_executing', default=False)
+    ui_list_selected_tree: bpy.props.IntProperty(update=update_node_tree_list)
+    #item_dyntip: bpy.props.StringProperty()
+
+
+
+class ZENO_UL_TreePropertyList(bpy.types.UIList):
+    """Show in node tree editor"""
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        tree = item
+
+        row = layout.row(align=True)
+        # tree name
+        #if context.space_data.node_tree and context.space_data.node_tree.name == tree.name:
+        row.prop(tree, "name", text="", emboss=False, icon_value=icon)
+        global tree_name_dict
+        tree_name_dict[str(index)] = tree.name
+            #row.label(text=' '+tree.name)
+        #else:
+            #row.operator('node.zeno_switch_node_tree', text=tree.name).node_tree_name = tree.name
+     
+        # buttons
+        row = row.row(align=True)
+        row.alignment = 'RIGHT'
+        row.ui_units_x = 1
+        row.prop(tree, 'zeno_cached', icon='PHYSICS', text='')
+
+    def filter_items(self, context, data, prop_name):
+        trees = getattr(data, prop_name)
+        filter_name = self.filter_name
+        filter_invert = self.use_filter_invert
+
+        filter_tree_types = [tree.bl_idname == 'ZenoNodeTree' for tree in trees]
+
+        filter_tree_names = [filter_name.lower() in tree.name.lower() for tree in trees]
+        filter_tree_names = [not f for f in filter_tree_names] if filter_invert else filter_tree_names
+
+        combine_filter = [f1 and f2 for f1, f2 in zip(filter_tree_types, filter_tree_names)]
+        # next code is needed for hiding wrong tree types
+        combine_filter = [not f for f in combine_filter] if filter_invert else combine_filter
+        combine_filter = [self.bitflag_filter_item if f else 0 for f in combine_filter]
+        return combine_filter, []
 
 
 class ZenoScenePanel(bpy.types.Panel):
@@ -83,14 +162,26 @@ class ZenoScenePanel(bpy.types.Panel):
 
     bl_label = 'Zeno Scene'
     bl_idname = 'SCENE_PT_zeno_scene'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
+    bl_space_type = 'NODE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "Node Tree"
     bl_context = 'scene'
+    bl_order = 2
+
+    @classmethod
+    def poll(cls, context):
+        try:
+            return context.space_data.node_tree.bl_idname == 'ZenoNodeTree'
+        except:
+            return False
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
-        row = layout.row()
+        col = layout.column()
+        col.template_list("ZENO_UL_TreePropertyList", "", bpy.data, 'node_groups',
+                          bpy.context.scene.zeno, "ui_list_selected_tree")
+        row = layout.row(align=True)
         row.prop(scene.zeno, 'frame_start')
         row.prop(scene.zeno, 'frame_end')
         col = layout.column()
@@ -101,11 +192,15 @@ class ZenoScenePanel(bpy.types.Panel):
         row.operator('node.zeno_stop')
 
 
+
+
 classes = (
     ZenoApplyOperator,
     ZenoStopOperator,
     ZenoReloadOperator,
     ZenoSceneProperties,
+    ZenoSwitchNodeTree,
+    ZENO_UL_TreePropertyList,
     ZenoScenePanel,
 )
 

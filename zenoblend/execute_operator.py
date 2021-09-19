@@ -2,9 +2,6 @@ import bpy
 import time
 from . import scenario
 
-tree_name_dict = dict()
-
-
 class ZenoApplyOperator(bpy.types.Operator):
     """Apply the Zeno graph"""
     bl_idname = "node.zeno_apply"
@@ -71,39 +68,13 @@ def draw_menu(self, context):
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
-# class ZenoSwitchNodeTree(bpy.types.Operator):
-#     """Switch to exact layout, user friendly way"""
-#     bl_idname = "node.zeno_switch_node_tree"
-#     bl_label = "switch node tree"
-#     bl_options = {'REGISTER', 'UNDO'}
-
-#     node_tree_name: bpy.props.StringProperty(
-#         default='', name='node_tree_name',
-#         description='node tree name to change node tree by button')
-
-#     @classmethod
-#     def poll(cls, context):
-#         if context.space_data.type == 'NODE_EDITOR':
-#             if bpy.context.space_data.tree_type == 'ZenoNodeTree':
-#                 return True
-#         else:
-#             return False
-
-#     def execute(self, context):
-#         name = bpy.data.node_groups.get(self.node_tree_name)
-#         if name:
-#             context.space_data.path.start(name)
-#         else:
-#             return {'CANCELLED'}
-#         return {'FINISHED'}
-
 def update_node_tree_list(self, context):
     tree_index = bpy.context.scene.zeno.ui_list_selected_tree
     #print(tree_index)
     #print(bpy.context.space_data.tree_type)
     global tree_name_dict
-    name = bpy.data.node_groups.get(tree_name_dict[str(tree_index)])
-    if name:
+    name = bpy.data.node_groups.get(tree_name_dict[tree_index])
+    if name and context.space_data and name != context.space_data.edit_tree.name:
         context.space_data.path.start(name)
     #print(nd[str(tree_index)])
 
@@ -118,9 +89,13 @@ class ZenoSceneProperties(bpy.types.PropertyGroup):
     #item_dyntip: bpy.props.StringProperty()
 
 
+class ZenoNewIndex():
+    new_index = -1
 
 class ZENO_UL_TreePropertyList(bpy.types.UIList):
     """Show in node tree editor"""
+    
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         tree = item
 
@@ -129,7 +104,13 @@ class ZENO_UL_TreePropertyList(bpy.types.UIList):
         #if context.space_data.node_tree and context.space_data.node_tree.name == tree.name:
         row.prop(tree, "name", text="", emboss=False, icon_value=icon)
         global tree_name_dict
-        tree_name_dict[str(index)] = tree.name
+        if index not in tree_name_dict:
+            tree_name_dict[index] = tree.name
+            ZenoNewIndex.new_index = index
+        else:
+            tree_name_dict[index] = tree.name
+            ZenoNewIndex.new_index = -1
+
             #row.label(text=' '+tree.name)
         #else:
             #row.operator('node.zeno_switch_node_tree', text=tree.name).node_tree_name = tree.name
@@ -181,6 +162,8 @@ class ZenoScenePanel(bpy.types.Panel):
         col = layout.column()
         col.template_list("ZENO_UL_TreePropertyList", "", bpy.data, 'node_groups',
                           bpy.context.scene.zeno, "ui_list_selected_tree")
+        if ZenoNewIndex.new_index >= 0:
+            bpy.context.scene.zeno.ui_list_selected_tree = ZenoNewIndex.new_index
         row = layout.row(align=True)
         row.prop(scene.zeno, 'frame_start')
         row.prop(scene.zeno, 'frame_end')
@@ -199,18 +182,52 @@ classes = (
     ZenoStopOperator,
     ZenoReloadOperator,
     ZenoSceneProperties,
-    ZenoSwitchNodeTree,
     ZENO_UL_TreePropertyList,
     ZenoScenePanel,
 )
 
 
+def notification_handler(*args):
+    for area in bpy.context.screen.areas:
+        if area.type == 'NODE_EDITOR':
+            for space in area.spaces:
+                if hasattr(space, "edit_tree"):
+                    tree = space.edit_tree
+    print(f"Object: {tree.name}, Args: {args}")
+    global tree_name_dict
+    key = next((k for k in tree_name_dict if tree_name_dict[k] == tree.name), None)
+    if key is not None:
+        bpy.context.scene.zeno.ui_list_selected_tree = key
+
+
+
+def subscribe_active_obj():
+    bpy.msgbus.subscribe_rna(
+        key=(bpy.types.SpaceNodeEditor, 'node_tree'),
+        owner=object(),
+        args=("a", "b", "c"),
+        notify=notification_handler,
+        options={"PERSISTENT",}
+    )
+    if load_handler_post not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(load_handler_post)
+
+
+@bpy.app.handlers.persistent
+def load_handler_post(dummy):
+    subscribe_active_obj()
+
+
+if load_handler_post not in bpy.app.handlers.load_post:
+    bpy.app.handlers.load_post.append(load_handler_post)
+
 def register():
+    global tree_name_dict
+    tree_name_dict = dict()
     for cls in classes:
         bpy.utils.register_class(cls)
     bpy.types.Scene.zeno = bpy.props.PointerProperty(name='zeno', type=ZenoSceneProperties)
     bpy.types.NODE_MT_context_menu.append(draw_menu)
-
 
 def unregister():
     bpy.types.NODE_MT_context_menu.remove(draw_menu)

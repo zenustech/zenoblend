@@ -86,7 +86,7 @@ class ZenoSceneProperties(bpy.types.PropertyGroup):
     frame_end: bpy.props.IntProperty(name='End', default=1000)
     executing: bpy.props.BoolProperty(name='is_executing', default=False)
     ui_list_selected_tree: bpy.props.IntProperty(update=update_node_tree_list)
-    #item_dyntip: bpy.props.StringProperty()
+   
 
 
 class ZenoNewIndex():
@@ -102,7 +102,7 @@ class ZENO_UL_TreePropertyList(bpy.types.UIList):
         row = layout.row(align=True)
         # tree name
         #if context.space_data.node_tree and context.space_data.node_tree.name == tree.name:
-        row.prop(tree, "name", text="", emboss=False, icon_value=icon)
+        row.prop(tree, "name", text="", emboss=False, icon='NONE')
         global tree_name_dict
         if index not in tree_name_dict:
             tree_name_dict[index] = tree.name
@@ -118,7 +118,9 @@ class ZENO_UL_TreePropertyList(bpy.types.UIList):
         # buttons
         row = row.row(align=True)
         row.alignment = 'RIGHT'
-        row.ui_units_x = 1
+        row.ui_units_x = 3
+        row.prop(tree, 'zeno_enabled', icon= f"RESTRICT_VIEW_{'OFF' if tree.zeno_enabled else 'ON'}", text='', emboss=False)
+        row.prop(tree, 'zeno_realtime_update', icon='FILE_REFRESH', text='')
         row.prop(tree, 'zeno_cached', icon='PHYSICS', text='')
 
     def filter_items(self, context, data, prop_name):

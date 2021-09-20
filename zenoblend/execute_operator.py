@@ -80,8 +80,8 @@ def update_node_tree_list(self, context):
 
 
 class ZenoSceneProperties(bpy.types.PropertyGroup):
-    node_tree_static: bpy.props.StringProperty(name='Static')
-    node_tree_framed: bpy.props.StringProperty(name='Framed')
+    #node_tree_static: bpy.props.StringProperty(name='Static')
+    #node_tree_framed: bpy.props.StringProperty(name='Framed')
     frame_start: bpy.props.IntProperty(name='Start', default=1)
     frame_end: bpy.props.IntProperty(name='End', default=1000)
     executing: bpy.props.BoolProperty(name='is_executing', default=False)
@@ -170,8 +170,8 @@ class ZenoScenePanel(bpy.types.Panel):
         row.prop(scene.zeno, 'frame_start')
         row.prop(scene.zeno, 'frame_end')
         col = layout.column()
-        col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
-        col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
+        #col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
+        #col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
         row = layout.row()
         row.operator('node.zeno_apply')
         row.operator('node.zeno_stop')
@@ -188,8 +188,10 @@ classes = (
     ZenoScenePanel,
 )
 
-
+# callback for updating editing nodetree
 def notification_handler(*args):
+    # set fake user automatically
+    [setattr(t, 'use_fake_user', True) for t in bpy.data.node_groups if t.bl_idname == 'ZenoNodeTree']
     for area in bpy.context.screen.areas:
         if area.type == 'NODE_EDITOR':
             for space in area.spaces:

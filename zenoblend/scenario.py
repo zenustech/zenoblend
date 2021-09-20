@@ -298,14 +298,17 @@ def update_scene(graph_name):
     print('update_scene spent', '{:.4f}s'.format(time.time() - t0))
 
 
-def get_tree_names():
-    static_tree = bpy.context.scene.zeno.node_tree_static
-    framed_tree = bpy.context.scene.zeno.node_tree_framed
-    if static_tree and static_tree not in bpy.data.node_groups:
-        raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
-    if framed_tree and framed_tree not in bpy.data.node_groups:
-        raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
-    return static_tree, framed_tree
+# def get_tree_names():
+#     static_tree = bpy.context.scene.zeno.node_tree_static
+#     framed_tree = bpy.context.scene.zeno.node_tree_framed
+#     if static_tree and static_tree not in bpy.data.node_groups:
+#         raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
+#     if framed_tree and framed_tree not in bpy.data.node_groups:
+#         raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
+#     return static_tree, framed_tree
+
+def get_enabled_trees():
+    return [t for t in bpy.data.node_groups if t.bl_idname == 'ZenoNodeTree' and t.zeno_enabled]
 
 
 @bpy.app.handlers.persistent
@@ -317,15 +320,20 @@ def frame_update_callback(*unused):
     try:
         nowUpdating = True
 
-        static_tree, framed_tree = get_tree_names()
-        if not static_tree and not framed_tree:
-            return False
-
+        # static_tree, framed_tree = get_tree_names()
+        #if not static_tree and not framed_tree:
+        #    return False
         reload_scene()
-        if framed_tree:
-            update_frame(framed_tree)
-        if static_tree:
-            update_scene(static_tree)
+        for tree in get_enabled_trees():
+            if tree.zeno_cached:
+                update_frame(tree.name)
+            else:
+                update_scene(tree.name)
+        
+        # if framed_tree:
+        #     update_frame(framed_tree)
+        # if static_tree:
+        #     update_scene(static_tree)
         return True
     finally:
         nowUpdating = False
@@ -339,40 +347,44 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
-    static_tree, framed_tree = get_tree_names()
-    if not static_tree:
-        return
-    our_deps = get_dependencies(static_tree)
+    for tree in get_enabled_trees():
+        if tree.zeno_realtime_update and not tree.zeno_cached:
+            static_tree = tree.name
 
-    needs_update = False
-    for update in depsgraph.updates:
-        object = update.id
-        if isinstance(object, bpy.types.Mesh):
-            object = object.id_data
-        if not isinstance(object, bpy.types.Object):
-            continue
-        if object.name in our_deps:
-            print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
-            needs_update = True
-            break
-    else:
+    #static_tree, framed_tree = get_tree_names()
+    #if not static_tree:
+    #    return
+            our_deps = get_dependencies(static_tree)
 
-        if reload_scene():
-            print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
-            needs_update = True
+            needs_update = False
+            for update in depsgraph.updates:
+                object = update.id
+                if isinstance(object, bpy.types.Mesh):
+                    object = object.id_data
+                if not isinstance(object, bpy.types.Object):
+                    continue
+                if object.name in our_deps:
+                    print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
+                    needs_update = True
+                    break
+            else:
 
-    if not needs_update:
-        return
+                if reload_scene():
+                    print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
+                    needs_update = True
 
-    global nowUpdating
-    if not nowUpdating:
-        try:
-            nowUpdating = True
-            static_tree, framed_tree = get_tree_names()
-            if static_tree:
-                update_scene(static_tree)
-        finally:
-            nowUpdating = False
+            if not needs_update:
+                return
+
+            global nowUpdating
+            if not nowUpdating:
+                try:
+                    nowUpdating = True
+                    #static_tree, framed_tree = get_tree_names()
+                    if static_tree:
+                        update_scene(static_tree)
+                finally:
+                    nowUpdating = False
 
 
 def register():

@@ -8,7 +8,7 @@ import subprocess
 
 
 if sys.platform == 'win32':
-    tcpath = 'C:\\Users\\archibate\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
+    tcpath = 'C:\\src\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake'
     if not os.path.exists(tcpath):
         tcpath = None
 else:

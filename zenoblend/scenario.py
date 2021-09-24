@@ -352,8 +352,9 @@ def scene_update_callback(scene, depsgraph):
     for tree in get_enabled_trees():
         if tree.zeno_realtime_update:
             if tree.zeno_cached:
-                frameCache.clear()
+                reload_scene()
                 update_frame(tree.name)
+               
             else:
                 static_tree = tree.name
                 our_deps = get_dependencies(static_tree)

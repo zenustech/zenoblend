@@ -12,8 +12,21 @@ class ZenoNodeTree(NodeTree):
     bl_label = "Zeno Node Tree"
     bl_icon = 'NODETREE'
 
-    zeno_enabled: bpy.props.BoolProperty(name="Enabled", default=True, description='Cache frames')
-    zeno_realtime_update: bpy.props.BoolProperty(name="Realtime Update", default=True, description='Realtime Update')
+
+    def enabled_callback(self, context):
+        if self.zeno_enabled:  # if the state is switched from false to true
+            bpy.ops.node.zeno_apply()
+        else:
+            print("stop!")
+            bpy.ops.node.zeno_stop()
+
+    def realtime_update_callback(self, context):
+        if self.zeno_realtime_update:  # if the state is switched from false to true
+            bpy.ops.node.zeno_apply()
+   
+
+    zeno_enabled: bpy.props.BoolProperty(name="Enabled", default=True, description='Enable Graph', update=enabled_callback)
+    zeno_realtime_update: bpy.props.BoolProperty(name="Realtime Update", default=True, description='Realtime Update', update=realtime_update_callback)
     zeno_cached: bpy.props.BoolProperty(name="Cached", default=False, description='Cache frames')
     
 

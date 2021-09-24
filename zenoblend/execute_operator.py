@@ -80,8 +80,6 @@ def update_node_tree_list(self, context):
 
 
 class ZenoSceneProperties(bpy.types.PropertyGroup):
-    #node_tree_static: bpy.props.StringProperty(name='Static')
-    #node_tree_framed: bpy.props.StringProperty(name='Framed')
     frame_start: bpy.props.IntProperty(name='Start', default=1)
     frame_end: bpy.props.IntProperty(name='End', default=1000)
     executing: bpy.props.BoolProperty(name='is_executing', default=False)
@@ -165,7 +163,10 @@ class ZenoScenePanel(bpy.types.Panel):
         col.template_list("ZENO_UL_TreePropertyList", "", bpy.data, 'node_groups',
                           scene.zeno, "ui_list_selected_tree")
         if ZenoNewIndex.new_index >= 0:
-            bpy.context.scene.zeno.ui_list_selected_tree = ZenoNewIndex.new_index
+            try:
+                bpy.context.scene.zeno.ui_list_selected_tree = ZenoNewIndex.new_index
+            except:
+                pass
         row = layout.row(align=True)
         row.prop(scene.zeno, 'frame_start')
         row.prop(scene.zeno, 'frame_end')
@@ -174,7 +175,7 @@ class ZenoScenePanel(bpy.types.Panel):
         if tree_id >= 0:
             tree = bpy.data.node_groups[tree_name_dict[tree_id]]           
             if tree.zeno_cached:
-                cached_to_frame = tree.nextFrameId - 1 if tree.nextFrameId else ''
+                cached_to_frame = tree.nextFrameId - 1 if getattr(tree, "nextFrameId", None) else ''
                 col.label(text=f"Cached to frame: {cached_to_frame}")
         row = layout.row()
         row.operator('node.zeno_apply')

@@ -161,18 +161,25 @@ def reload_scene():  # todo: have an option to turn off this
 
 def delete_scene(specfied_graph_name = None):
     hadScene = False
-    global sceneId
-    print(time.strftime('[%H:%M:%S]'), 'delete_scene')
-    if specfied_graph_name:
-        bpy.data.node_groups[specfied_graph_name].nextFrameId = None
-    else:
-        for nodetree in get_enabled_trees():
-            nodetree.nextFrameId = None
+    global sceneId   
+    print(time.strftime('[%H:%M:%S]'), 'delete_scene')   
     if sceneId is not None:
         core.deleteScene(sceneId)
         hadScene = True
     sceneId = None
-    frameCache.clear()
+    
+    if specfied_graph_name:
+        tree = bpy.data.node_groups[specfied_graph_name]
+        if tree:
+            tree.nextFrameId = None
+            tree.frameCache.clear()
+    else:
+        for nodetree in get_enabled_trees():
+            nodetree.nextFrameId = None
+            if not hasattr(nodetree, "frameCache"):
+                nodetree.frameCache = {}
+            nodetree.frameCache.clear()
+    
     return hadScene
 
 def graph_deal_input(graphPtr, inputName):
@@ -198,7 +205,7 @@ def graph_deal_input(graphPtr, inputName):
     return prepareCallback
 
 
-def graph_deal_output(graphPtr, outputName, is_framed):
+def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
     if outputName not in bpy.data.objects:
         print('WARNING: object `{}` not exist, creating now'.format(outputName))
         blenderMesh = bpy.data.meshes.new(outputName)
@@ -221,7 +228,10 @@ def graph_deal_output(graphPtr, outputName, is_framed):
 
     if is_framed:
         currFrameId = bpy.context.scene.frame_current
-        currFrameCache = frameCache.setdefault(currFrameId, {})
+        tree = bpy.data.node_groups[graph_name]
+        if not hasattr(tree, "frameCache"):
+            tree.frameCache = {}
+        currFrameCache = tree.frameCache.setdefault(currFrameId, {})
         currFrameCache[blenderObj.name] = blenderMesh.name
 
     meshToBlender(outMeshPtr, blenderMesh)
@@ -245,7 +255,7 @@ def execute_scene(graph_name, is_framed):
     outputNames = core.graphGetOutputNames(graphPtr)
     print('graph outputs:', outputNames)
     for outputName in outputNames:
-        graph_deal_output(graphPtr, outputName, is_framed)
+        graph_deal_output(graph_name, graphPtr, outputName, is_framed)
 
     for cb in prepareCallbacks:
         cb()
@@ -262,7 +272,7 @@ def get_dependencies(graph_name):
     return inputNames
 
 
-frameCache = {}
+#frameCache = {}
 
 
 def update_frame(graph_name):
@@ -279,9 +289,9 @@ def update_frame(graph_name):
         print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
         tree.nextFrameId = currFrameId + 1
 
-    if currFrameId not in frameCache:
+    if currFrameId not in tree.frameCache:
         return
-    for objName, meshName in frameCache[currFrameId].items():
+    for objName, meshName in tree.frameCache[currFrameId].items():
         if objName not in bpy.data.objects:
             continue
         if meshName not in bpy.data.meshes:

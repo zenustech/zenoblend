@@ -35,7 +35,7 @@ class ZenoStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.zeno.executing = False
-        if scenario.delete_scene():
+        if scenario.delete_scene(context.space_data.edit_tree.name):
             self.report({'INFO'}, 'Node tree stopped')
         else:
             self.report({'WARNING'}, 'Node tree already stopped!')
@@ -170,6 +170,12 @@ class ZenoScenePanel(bpy.types.Panel):
         row.prop(scene.zeno, 'frame_start')
         row.prop(scene.zeno, 'frame_end')
         col = layout.column()
+        tree_id = bpy.context.scene.zeno.ui_list_selected_tree
+        if tree_id >= 0:
+            tree = bpy.data.node_groups[tree_name_dict[tree_id]]           
+            if tree.zeno_cached:
+                cached_to_frame = tree.nextFrameId - 1 if tree.nextFrameId else ''
+                col.label(text=f"Cached to frame: {cached_to_frame}")
         #col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
         #col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
         row = layout.row()

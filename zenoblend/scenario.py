@@ -132,7 +132,6 @@ def meshToBlender(meshPtr, mesh):
 
 
 sceneId = None
-nextFrameId = None
 lastJsonStr = None
 
 
@@ -160,19 +159,21 @@ def reload_scene():  # todo: have an option to turn off this
     return True
 
 
-def delete_scene():
+def delete_scene(specfied_graph_name = None):
     hadScene = False
     global sceneId
-    global nextFrameId
     print(time.strftime('[%H:%M:%S]'), 'delete_scene')
-    nextFrameId = None
+    if specfied_graph_name:
+        bpy.data.node_groups[specfied_graph_name].nextFrameId = None
+    else:
+        for nodetree in get_enabled_trees():
+            nodetree.nextFrameId = None
     if sceneId is not None:
         core.deleteScene(sceneId)
         hadScene = True
     sceneId = None
     frameCache.clear()
     return hadScene
-
 
 def graph_deal_input(graphPtr, inputName):
     if inputName not in bpy.data.objects:
@@ -265,18 +266,18 @@ frameCache = {}
 
 
 def update_frame(graph_name):
-    global nextFrameId
+    tree = bpy.data.node_groups[graph_name]
     currFrameId = bpy.context.scene.frame_current
-    if nextFrameId is None:
-        nextFrameId = bpy.context.scene.zeno.frame_start
+    if tree.nextFrameId is None:
+        tree.nextFrameId = bpy.context.scene.zeno.frame_start
     if currFrameId > bpy.context.scene.zeno.frame_end:
         return
-    if currFrameId == nextFrameId:
+    if currFrameId == tree.nextFrameId:
         print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)
         t0 = time.time()
         execute_scene(graph_name, is_framed=True)
         print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
-        nextFrameId = currFrameId + 1
+        tree.nextFrameId = currFrameId + 1
 
     if currFrameId not in frameCache:
         return

@@ -12,6 +12,8 @@ class ZenoNodeTree(NodeTree):
     bl_label = "Zeno Node Tree"
     bl_icon = 'NODETREE'
 
+    def __init__(self):
+        self.nextFrameId = None
 
     def enabled_callback(self, context):
         if self.zeno_enabled:  # if the state is switched from false to true

@@ -396,12 +396,18 @@ def scene_update_callback(scene, depsgraph):
                     finally:
                         nowUpdating = False
 
+@bpy.app.handlers.persistent
+def load_post_callback(dummy):
+    bpy.ops.node.zeno_apply()
+
 
 def register():
     if frame_update_callback not in bpy.app.handlers.frame_change_post:
         bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
+    if load_post_callback not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(load_post_callback)
 
 
 def unregister():
@@ -410,3 +416,5 @@ def unregister():
         bpy.app.handlers.frame_change_post.remove(frame_update_callback)
     if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)
+    if load_post_callback in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(load_post_callback)

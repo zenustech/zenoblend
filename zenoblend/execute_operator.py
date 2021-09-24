@@ -163,27 +163,24 @@ class ZenoScenePanel(bpy.types.Panel):
         scene = context.scene
         col = layout.column()
         col.template_list("ZENO_UL_TreePropertyList", "", bpy.data, 'node_groups',
-                          bpy.context.scene.zeno, "ui_list_selected_tree")
+                          scene.zeno, "ui_list_selected_tree")
         if ZenoNewIndex.new_index >= 0:
             bpy.context.scene.zeno.ui_list_selected_tree = ZenoNewIndex.new_index
         row = layout.row(align=True)
         row.prop(scene.zeno, 'frame_start')
         row.prop(scene.zeno, 'frame_end')
         col = layout.column()
-        tree_id = bpy.context.scene.zeno.ui_list_selected_tree
+        tree_id = scene.zeno.ui_list_selected_tree
         if tree_id >= 0:
             tree = bpy.data.node_groups[tree_name_dict[tree_id]]           
             if tree.zeno_cached:
                 cached_to_frame = tree.nextFrameId - 1 if tree.nextFrameId else ''
                 col.label(text=f"Cached to frame: {cached_to_frame}")
-        #col.prop_search(scene.zeno, 'node_tree_static', bpy.data, 'node_groups')
-        #col.prop_search(scene.zeno, 'node_tree_framed', bpy.data, 'node_groups')
         row = layout.row()
         row.operator('node.zeno_apply')
-        row.operator('node.zeno_stop')
-
-
-
+        if getattr(tree, "zeno_cached", None) and scene.frame_current != scene.zeno.frame_start: 
+            row.enabled = False # gray out button
+        
 
 classes = (
     ZenoApplyOperator,

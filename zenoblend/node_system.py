@@ -4,7 +4,7 @@ from nodeitems_utils import NodeCategory, NodeItem
 from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
-
+from .scenario import reload_scene
 
 class ZenoNodeTree(NodeTree):
     '''Zeno node tree type'''
@@ -20,7 +20,7 @@ class ZenoNodeTree(NodeTree):
         if self.zeno_enabled:  # if the state is switched from false to true
             bpy.ops.node.zeno_apply()
         else:
-            bpy.ops.node.zeno_stop()
+            reload_scene()
 
     def realtime_update_callback(self, context):
         if self.zeno_realtime_update:  # if the state is switched from false to true
@@ -297,7 +297,7 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
     def draw_buttons(self, context, layout):
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
-        row.operator("node.zeno_stop", text="Stop")
+        #row.operator("node.zeno_stop", text="Stop")
 
 
 class ZenoNode_BlenderInputText:
@@ -342,7 +342,7 @@ class ZenoNode_BlenderOutputPrimitive:
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
-        row.operator("node.zeno_stop", text="Stop")
+        #row.operator("node.zeno_stop", text="Stop")
 
 
 #class ZenoNode_BlenderLineViewer(def_node_class('BlenderLineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):

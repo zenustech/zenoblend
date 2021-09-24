@@ -159,7 +159,7 @@ def reload_scene():  # todo: have an option to turn off this
     return True
 
 
-def delete_scene(specfied_graph_name = None):
+def delete_scene():
     hadScene = False
     global sceneId   
     print(time.strftime('[%H:%M:%S]'), 'delete_scene')   
@@ -168,17 +168,11 @@ def delete_scene(specfied_graph_name = None):
         hadScene = True
     sceneId = None
     
-    if specfied_graph_name:
-        tree = bpy.data.node_groups[specfied_graph_name]
-        if tree:
-            tree.nextFrameId = None
-            tree.frameCache.clear()
-    else:
-        for nodetree in get_enabled_trees():
-            nodetree.nextFrameId = None
-            if not hasattr(nodetree, "frameCache"):
-                nodetree.frameCache = {}
-            nodetree.frameCache.clear()
+    for nodetree in get_enabled_trees():
+        nodetree.nextFrameId = None
+        if not hasattr(nodetree, "frameCache"):
+            nodetree.frameCache = {}
+        nodetree.frameCache.clear()
     
     return hadScene
 

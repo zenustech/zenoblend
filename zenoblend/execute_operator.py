@@ -35,7 +35,7 @@ class ZenoStopOperator(bpy.types.Operator):
 
     def execute(self, context):
         bpy.context.scene.zeno.executing = False
-        if scenario.delete_scene(context.space_data.edit_tree.name):
+        if scenario.delete_scene():
             self.report({'INFO'}, 'Node tree stopped')
         else:
             self.report({'WARNING'}, 'Node tree already stopped!')
@@ -64,7 +64,7 @@ def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
         self.layout.operator("node.zeno_apply", text="Apply Graph")
-        self.layout.operator("node.zeno_stop", text="Stop Running Graph")
+        #self.layout.operator("node.zeno_stop", text="Stop Running Graph")
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 

@@ -360,6 +360,8 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
+    scene_reloaded = False
+
     for tree in get_enabled_trees():
         if tree.zeno_realtime_update:
             if tree.zeno_cached:
@@ -382,10 +384,10 @@ def scene_update_callback(scene, depsgraph):
                         needs_update = True
                         break
                 else:
-
-                    if reload_scene():
+                    if scene_reloaded or reload_scene():
                         print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
                         needs_update = True
+                        scene_reloaded = True  # avoid reloading scene more than one time
 
                 if not needs_update:
                     return

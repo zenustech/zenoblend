@@ -4,7 +4,7 @@ from nodeitems_utils import NodeCategory, NodeItem
 from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
-from .scenario import reload_scene
+from .scenario import reload_scene, frame_update_callback
 from .gpu_drawer import clear_draw_handler
 
 class ZenoNodeTree(NodeTree):
@@ -21,7 +21,7 @@ class ZenoNodeTree(NodeTree):
 
     def enabled_callback(self, context):
         if self.zeno_enabled:  # if the state is switched from false to true
-            bpy.ops.node.zeno_apply()
+            frame_update_callback()
         else:
             clear_draw_handler(self)
             reload_scene()
@@ -32,7 +32,7 @@ class ZenoNodeTree(NodeTree):
 
     def cached_callback(self, context):
         if self.zeno_cached:  # if the state is switched from false to true
-            pass
+            frame_update_callback()
         else:
             self.frameCache = {}
             self.nextFrameId = None
@@ -260,7 +260,7 @@ def def_node_class(name, inputs, outputs, category):
                 node_tree.links.new(from_socket, to_socket)
 
         def update(self):  # rewrite update function
-            if bpy.context.scene.zeno.executing:
+            if self.id_data.zeno_realtime_update:
                 print('updating by node edit')
                 from . import scenario
                 scenario.frame_update_callback()

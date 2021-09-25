@@ -5,6 +5,7 @@ from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
 from .scenario import reload_scene
+from .gpu_drawer import clear_draw_handler
 
 class ZenoNodeTree(NodeTree):
     '''Zeno node tree type'''
@@ -15,11 +16,14 @@ class ZenoNodeTree(NodeTree):
     def __init__(self):  # Declare attributes of ZenoNodeTree. No practical effect
         self.nextFrameId = None
         self.frameCache = {}
+        self.batch = None
+        self.draw_handler = None
 
     def enabled_callback(self, context):
         if self.zeno_enabled:  # if the state is switched from false to true
             bpy.ops.node.zeno_apply()
         else:
+            clear_draw_handler(self)
             reload_scene()
 
     def realtime_update_callback(self, context):

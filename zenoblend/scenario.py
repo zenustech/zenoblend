@@ -255,7 +255,7 @@ def execute_scene(graph_name, is_framed):
         cb()
 
     from .gpu_drawer import draw_graph
-    draw_graph(graphPtr)
+    draw_graph(graph_name, graphPtr)
 
 
 def get_dependencies(graph_name):
@@ -264,10 +264,6 @@ def get_dependencies(graph_name):
 
     inputNames = core.graphGetInputNames(graphPtr)
     return inputNames
-
-
-#frameCache = {}
-
 
 def update_frame(graph_name):
     tree = bpy.data.node_groups[graph_name]

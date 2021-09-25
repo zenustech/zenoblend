@@ -18,28 +18,26 @@ class ZenoApplyOperator(bpy.types.Operator):
         if not scenario.frame_update_callback():
             self.report({'ERROR'}, 'No node tree specified! Please check the Zeno Scene panel.')
         else:
-            bpy.context.scene.zeno.executing = True
             dt = time.time() - t0
             self.report({'INFO'}, 'Node tree applied in {:.04f}s'.format(dt))
         return {'FINISHED'}
 
 
-class ZenoStopOperator(bpy.types.Operator):
-    """Stop the running Zeno graph"""
-    bl_idname = "node.zeno_stop"
-    bl_label = "Stop"
+# class ZenoStopOperator(bpy.types.Operator):
+#     """Stop the running Zeno graph"""
+#     bl_idname = "node.zeno_stop"
+#     bl_label = "Stop"
 
-    @classmethod
-    def poll(cls, context):
-        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
+#     @classmethod
+#     def poll(cls, context):
+#         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
-    def execute(self, context):
-        bpy.context.scene.zeno.executing = False
-        if scenario.delete_scene():
-            self.report({'INFO'}, 'Node tree stopped')
-        else:
-            self.report({'WARNING'}, 'Node tree already stopped!')
-        return {'FINISHED'}
+#     def execute(self, context):
+#         if scenario.delete_scene():
+#             self.report({'INFO'}, 'Node tree stopped')
+#         else:
+#             self.report({'WARNING'}, 'Node tree already stopped!')
+#         return {'FINISHED'}
 
 
 class ZenoReloadOperator(bpy.types.Operator):
@@ -79,10 +77,8 @@ def update_node_tree_list(self, context):
 class ZenoSceneProperties(bpy.types.PropertyGroup):
     frame_start: bpy.props.IntProperty(name='Start', default=1)
     frame_end: bpy.props.IntProperty(name='End', default=1000)
-    executing: bpy.props.BoolProperty(name='is_executing', default=False)
     ui_list_selected_tree: bpy.props.IntProperty(update=update_node_tree_list)
    
-
 
 class ZenoNewIndex():
     new_index = -1
@@ -169,15 +165,16 @@ class ZenoScenePanel(bpy.types.Panel):
                 col.label(text=f"Cached to frame: {cached_to_frame}")
         row = layout.row()
         row.operator('node.zeno_apply')
-        if tree.zeno_cached and scene.frame_current != scene.zeno.frame_start: 
-            row.enabled = False # gray out button
+        if tree.zeno_cached:
+            if scene.frame_current != scene.zeno.frame_start: 
+                row.enabled = False # gray out button
         elif tree.zeno_realtime_update:
             row.enabled = False
         
 
 classes = (
     ZenoApplyOperator,
-    ZenoStopOperator,
+    # ZenoStopOperator,
     ZenoReloadOperator,
     ZenoSceneProperties,
     ZENO_UL_TreePropertyList,

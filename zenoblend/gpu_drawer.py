@@ -12,6 +12,7 @@ from .scenario import get_enabled_trees
 shader = None
 
 def draw_graph(graph_name, graphPtr):
+    nodetree = bpy.data.node_groups[graph_name]
     line_pos = core.graphGetDrawLineVertexBuffer(graphPtr)
     line_color = core.graphGetDrawLineColorBuffer(graphPtr)
     line_indices = core.graphGetDrawLineIndexBuffer(graphPtr)
@@ -20,7 +21,7 @@ def draw_graph(graph_name, graphPtr):
         global shader
         if shader is None:
             shader = gpu.types.GPUShader(vertex_shader, fragment_shader, geocode=geometry_shader, defines=preprocessor)
-        nodetree = bpy.data.node_groups[graph_name]
+        
         nodetree.batch = batch_for_shader(shader, 'LINES', {"pos": line_pos, 'color': line_color}, indices=line_indices)
         if getattr(nodetree, 'draw_handler', None):
             bpy.types.SpaceView3D.draw_handler_remove(nodetree.draw_handler, 'WINDOW')

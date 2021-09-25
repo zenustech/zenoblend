@@ -300,15 +300,6 @@ def update_scene(graph_name):
     print('update_scene spent', '{:.4f}s'.format(time.time() - t0))
 
 
-# def get_tree_names():
-#     static_tree = bpy.context.scene.zeno.node_tree_static
-#     framed_tree = bpy.context.scene.zeno.node_tree_framed
-#     if static_tree and static_tree not in bpy.data.node_groups:
-#         raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
-#     if framed_tree and framed_tree not in bpy.data.node_groups:
-#         raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
-#     return static_tree, framed_tree
-
 def get_enabled_trees():
     return [t for t in bpy.data.node_groups if t.bl_idname == 'ZenoNodeTree' and t.zeno_enabled]
 
@@ -346,7 +337,6 @@ nowUpdating = False
 
 @bpy.app.handlers.persistent
 def scene_update_callback(scene, depsgraph):
-    print("scene_update_callback")
     if sceneId is None:
         return
 

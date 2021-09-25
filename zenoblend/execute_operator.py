@@ -64,19 +64,16 @@ def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
         self.layout.operator("node.zeno_apply", text="Apply Graph")
-        #self.layout.operator("node.zeno_stop", text="Stop Running Graph")
+        #self.layout.operator("node.zeno_stop", text="Stop Running Graph")  # deprecated
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
 def update_node_tree_list(self, context):
     tree_index = bpy.context.scene.zeno.ui_list_selected_tree
-    #print(tree_index)
-    #print(bpy.context.space_data.tree_type)
     global tree_name_dict
     name = bpy.data.node_groups.get(tree_name_dict[tree_index])
     if name and context.space_data and name != context.space_data.edit_tree.name:
         context.space_data.path.start(name)
-    #print(nd[str(tree_index)])
 
 
 class ZenoSceneProperties(bpy.types.PropertyGroup):
@@ -96,10 +93,10 @@ class ZENO_UL_TreePropertyList(bpy.types.UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         tree = item
-
         row = layout.row(align=True)
+
         # tree name
-        #if context.space_data.node_tree and context.space_data.node_tree.name == tree.name:
+        # if context.space_data.node_tree and context.space_data.node_tree.name == tree.name:
         row.prop(tree, "name", text="", emboss=False, icon='NONE')
         global tree_name_dict
         if index not in tree_name_dict:
@@ -109,10 +106,6 @@ class ZENO_UL_TreePropertyList(bpy.types.UIList):
             tree_name_dict[index] = tree.name
             ZenoNewIndex.new_index = -1
 
-            #row.label(text=' '+tree.name)
-        #else:
-            #row.operator('node.zeno_switch_node_tree', text=tree.name).node_tree_name = tree.name
-     
         # buttons
         row = row.row(align=True)
         row.alignment = 'RIGHT'
@@ -125,12 +118,9 @@ class ZENO_UL_TreePropertyList(bpy.types.UIList):
         trees = getattr(data, prop_name)
         filter_name = self.filter_name
         filter_invert = self.use_filter_invert
-
         filter_tree_types = [tree.bl_idname == 'ZenoNodeTree' for tree in trees]
-
         filter_tree_names = [filter_name.lower() in tree.name.lower() for tree in trees]
         filter_tree_names = [not f for f in filter_tree_names] if filter_invert else filter_tree_names
-
         combine_filter = [f1 and f2 for f1, f2 in zip(filter_tree_types, filter_tree_names)]
         # next code is needed for hiding wrong tree types
         combine_filter = [not f for f in combine_filter] if filter_invert else combine_filter
@@ -179,8 +169,10 @@ class ZenoScenePanel(bpy.types.Panel):
                 col.label(text=f"Cached to frame: {cached_to_frame}")
         row = layout.row()
         row.operator('node.zeno_apply')
-        if getattr(tree, "zeno_cached", None) and scene.frame_current != scene.zeno.frame_start: 
+        if tree.zeno_cached and scene.frame_current != scene.zeno.frame_start: 
             row.enabled = False # gray out button
+        elif tree.zeno_realtime_update:
+            row.enabled = False
         
 
 classes = (

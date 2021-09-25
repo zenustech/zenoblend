@@ -7,6 +7,7 @@ from gpu_extras.batch import batch_for_shader
 
 from .dll import core
 from .polywire_shaders import vertex_shader, fragment_shader, geometry_shader, preprocessor
+from .scenario import get_enabled_trees
 
 shader = None
 

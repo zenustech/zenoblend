@@ -62,8 +62,8 @@ class ZenoReloadOperator(bpy.types.Operator):
 def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
-        self.layout.operator("node.zeno_start", text="Start Zeno")
-        self.layout.operator("node.zeno_stop", text="Stop Zeno")
+        self.layout.operator("node.zeno_start", text="Start Zeno Instance")
+        self.layout.operator("node.zeno_stop", text="Stop Zeno Instance")
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
@@ -171,8 +171,8 @@ class ZenoScenePanel(bpy.types.Panel):
         
 
 classes = (
-    # ZenoApplyOperator,
-    # ZenoStopOperator,
+    ZenoStartOperator,
+    ZenoStopOperator,
     ZenoReloadOperator,
     ZenoSceneProperties,
     ZENO_UL_TreePropertyList,

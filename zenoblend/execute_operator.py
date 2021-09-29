@@ -164,7 +164,7 @@ class ZenoScenePanel(bpy.types.Panel):
         if tree_id >= 0:
             tree = bpy.data.node_groups[tree_name_dict[tree_id]]           
             if tree.zeno_cached:
-                cached_to_frame = tree._zeno_nextFrameId - 1 if getattr(tree, "_zeno_nextFrameId", None) else ''
+                cached_to_frame = tree.nextFrameId - 1 if getattr(tree, "nextFrameId", None) else ''
                 col.label(text=f"Cached to frame: {cached_to_frame}")
         '''
         row = layout.row()

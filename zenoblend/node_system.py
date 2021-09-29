@@ -43,7 +43,7 @@ class ZenoNodeTree(NodeTree):
 
     zeno_enabled: bpy.props.BoolProperty(name="Enabled", default=True, description='Enable Graph', update=enabled_callback)
     zeno_realtime_update: bpy.props.BoolProperty(name="Realtime Update", default=True, description='Realtime Update', update=realtime_update_callback)
-    zeno_cached: bpy.props.BoolProperty(name="Cached", default=False, description='Cache frames', update=cached_callback)
+    zeno_cached: bpy.props.BoolProperty(name="Cached", default=True, description='Cache frames', update=cached_callback)
     
 
 class ZenoNodeCategory(NodeCategory):

@@ -268,7 +268,7 @@ def get_dependencies(graph_name):
 def update_frame(graph_name):
     tree = bpy.data.node_groups[graph_name]
     currFrameId = bpy.context.scene.frame_current
-    if tree.nextFrameId is None:
+    if getattr(tree, "nextFrameId", None) is None:
         tree.nextFrameId = bpy.context.scene.zeno.frame_start
     if currFrameId > bpy.context.scene.zeno.frame_end:
         return
@@ -279,7 +279,8 @@ def update_frame(graph_name):
         print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
         tree.nextFrameId = currFrameId + 1
 
-    if currFrameId not in tree.frameCache:
+    
+    if currFrameId not in getattr(tree, "frameCache", {}):
         return
     for objName, meshName in tree.frameCache[currFrameId].items():
         if objName not in bpy.data.objects:
@@ -382,9 +383,11 @@ def scene_update_callback(scene, depsgraph):
                     finally:
                         nowUpdating = False
 
-#@bpy.app.handlers.persistent
-#def load_post_callback(dummy):
-    #bpy.ops.node.zeno_apply()
+@bpy.app.handlers.persistent
+def load_post_callback(dummy):
+    for tree in bpy.data.node_groups:
+        if tree.bl_idname == 'ZenoNodeTree': 
+            tree.zeno_realtime_update = False
 
 
 def register():
@@ -392,8 +395,8 @@ def register():
         bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
-    #if load_post_callback not in bpy.app.handlers.load_post:
-        #bpy.app.handlers.load_post.append(load_post_callback)
+    if load_post_callback not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(load_post_callback)
 
 
 def unregister():
@@ -402,5 +405,5 @@ def unregister():
         bpy.app.handlers.frame_change_post.remove(frame_update_callback)
     if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)
-    #if load_post_callback in bpy.app.handlers.load_post:
-        #bpy.app.handlers.load_post.remove(load_post_callback)
+    if load_post_callback in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(load_post_callback)

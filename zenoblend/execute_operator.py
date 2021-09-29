@@ -24,20 +24,35 @@ class ZenoStartOperator(bpy.types.Operator):
 #'''
 
 
-class ZenoStopOperator(bpy.types.Operator):
-    """Stop the running Zeno instance"""
-    bl_idname = "node.zeno_stop"
-    bl_label = "Stop"
+class ZenoEnableAllOperator(bpy.types.Operator):
+    """Enable all node trees"""
+    bl_idname = "node.zeno_enable_all"
+    bl_label = "Enable All"
 
     @classmethod
     def poll(cls, context):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        if scenario.delete_scene():
-            self.report({'INFO'}, 'Node tree stopped')
-        else:
-            self.report({'WARNING'}, 'Node tree already stopped!')
+        for tree in bpy.data.node_groups:
+            if tree.bl_idname == 'ZenoNodeTree': 
+                tree.zeno_enabled = True
+        return {'FINISHED'}
+
+class ZenoDisableAllOperator(bpy.types.Operator):
+    """Disable all node trees"""
+    bl_idname = "node.zeno_stop"
+    bl_label = "Disable All"
+
+    @classmethod
+    def poll(cls, context):
+        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
+
+    def execute(self, context):
+        scenario.delete_scene()
+        for tree in bpy.data.node_groups:
+            if tree.bl_idname == 'ZenoNodeTree': 
+                tree.zeno_enabled = False
         return {'FINISHED'}
 
 
@@ -147,6 +162,9 @@ class ZenoScenePanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        row = layout.row()
+        row.operator('node.zeno_enable_all')
+        row.operator('node.zeno_stop')
         col = layout.column()
         col.template_list("ZENO_UL_TreePropertyList", "", bpy.data, 'node_groups',
                           scene.zeno, "ui_list_selected_tree")
@@ -167,12 +185,17 @@ class ZenoScenePanel(bpy.types.Panel):
                 col.label(text=f"Cached to frame: {cached_to_frame}")
         row = layout.row()
         row.operator('node.zeno_start')
-        row.operator('node.zeno_stop')
+        if tree.zeno_cached:
+            if scene.frame_current != scene.zeno.frame_start: 
+                row.enabled = False # gray out button
+        elif tree.zeno_realtime_update:
+            row.enabled = False
         
 
 classes = (
     ZenoStartOperator,
-    ZenoStopOperator,
+    ZenoEnableAllOperator,
+    ZenoDisableAllOperator,
     ZenoReloadOperator,
     ZenoSceneProperties,
     ZENO_UL_TreePropertyList,

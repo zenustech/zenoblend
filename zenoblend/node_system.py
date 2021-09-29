@@ -4,7 +4,8 @@ from nodeitems_utils import NodeCategory, NodeItem
 from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
-
+from .scenario import reload_scene, frame_update_callback
+from .gpu_drawer import clear_draw_handler
 
 class ZenoNodeTree(NodeTree):
     '''Zeno node tree type'''
@@ -12,6 +13,34 @@ class ZenoNodeTree(NodeTree):
     bl_label = "Zeno Node Tree"
     bl_icon = 'NODETREE'
 
+    def __init__(self):  # Declare attributes of ZenoNodeTree. No practical effect
+        self.nextFrameId = None
+        self.frameCache = {}
+        self.batch = None
+        self.draw_handler = None
+
+    def enabled_callback(self, context):
+        if self.zeno_enabled:  # if the state is switched from false to true
+            frame_update_callback()
+        else:
+            clear_draw_handler(self)
+            reload_scene()
+
+    def realtime_update_callback(self, context):
+        if self.zeno_realtime_update:  # if the state is switched from false to true
+            bpy.ops.node.zeno_apply()
+
+    def cached_callback(self, context):
+        if self.zeno_cached:  # if the state is switched from false to true
+            frame_update_callback()
+        else:
+            self.frameCache = {}
+            self.nextFrameId = None
+
+    zeno_enabled: bpy.props.BoolProperty(name="Enabled", default=True, description='Enable Graph', update=enabled_callback)
+    zeno_realtime_update: bpy.props.BoolProperty(name="Realtime Update", default=True, description='Realtime Update', update=realtime_update_callback)
+    zeno_cached: bpy.props.BoolProperty(name="Cached", default=False, description='Cache frames', update=cached_callback)
+    
 
 class ZenoNodeCategory(NodeCategory):
     @classmethod
@@ -230,13 +259,11 @@ def def_node_class(name, inputs, outputs, category):
                 to_socket = to_node.inputs[to_socket]
                 node_tree.links.new(from_socket, to_socket)
 
-    ''' to @hooyuser: seems not working?
-    def update(self):  # rewrite update function
-        if bpy.context.scene.zeno.executing:
-            print('updating by node edit')
-            from . import scenario
-            scenario.frame_update_callback()
-    '''
+        def update(self):  # rewrite update function
+            if self.id_data.zeno_realtime_update:
+                print('updating by node edit')
+                from . import scenario
+                scenario.frame_update_callback()
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
     Def.__name__ = 'ZenoNode_' + name
@@ -274,7 +301,7 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
     def draw_buttons(self, context, layout):
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
-        row.operator("node.zeno_stop", text="Stop")
+        #row.operator("node.zeno_stop", text="Stop")
 
 
 class ZenoNode_BlenderInputText:
@@ -287,6 +314,15 @@ class ZenoNode_BlenderInputText:
         row = layout.row()
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
+class ZenoNode_BlenderInputAxes:
+    '''Zeno specialized mixin BlenderInputPrimitive node'''
+    objid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    def draw_buttons(self, context, layout):
+        row = layout.row()
+        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 class ZenoNode_BlenderInputPrimitive:
     '''Zeno specialized mixin BlenderInputPrimitive node'''
@@ -310,7 +346,7 @@ class ZenoNode_BlenderOutputPrimitive:
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
         row = layout.row()
         row.operator("node.zeno_apply", text="Apply")
-        row.operator("node.zeno_stop", text="Stop")
+        #row.operator("node.zeno_stop", text="Stop")
 
 
 #class ZenoNode_BlenderLineViewer(def_node_class('BlenderLineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):

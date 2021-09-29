@@ -173,8 +173,8 @@ def delete_scene():
         if not hasattr(nodetree, "frameCache"):
             nodetree.frameCache = {}
         nodetree.frameCache.clear()
-    
     return hadScene
+
 
 def graph_deal_input(graphPtr, inputName):
     if inputName not in bpy.data.objects:

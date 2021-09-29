@@ -303,8 +303,8 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
 
     def draw_buttons(self, context, layout):
         row = layout.row()
-        #row.operator("node.zeno_apply", text="Apply")
-        #row.operator("node.zeno_stop", text="Stop")
+        row.operator("node.zeno_start", text="Start")
+        row.operator("node.zeno_stop", text="Stop")
 
 
 class ZenoNode_BlenderInputText:
@@ -314,8 +314,7 @@ class ZenoNode_BlenderInputText:
     bpy_data_inputs = {'text': 'texts'}  # parameter name 'text' is temporarily hardcoded, possibly get processed automatically
 
     def draw_buttons(self, context, layout):
-        row = layout.row()
-        row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
+        layout.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 class ZenoNode_BlenderInputAxes:
     '''Zeno specialized mixin BlenderInputAxes node'''
@@ -324,8 +323,7 @@ class ZenoNode_BlenderInputAxes:
     bpy_data_inputs = {'objid': 'objects'}
 
     def draw_buttons(self, context, layout):
-        row = layout.row()
-        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
+        layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 class ZenoNode_BlenderInputPrimitive:
     '''Zeno specialized mixin BlenderInputPrimitive node'''
@@ -334,8 +332,7 @@ class ZenoNode_BlenderInputPrimitive:
     bpy_data_inputs = {'objid': 'objects'}
 
     def draw_buttons(self, context, layout):
-        row = layout.row()
-        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
+        layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
 class ZenoNode_BlenderOutputPrimitive:
@@ -345,11 +342,7 @@ class ZenoNode_BlenderOutputPrimitive:
     bpy_data_inputs = {'objid': 'objects'}
 
     def draw_buttons(self, context, layout):
-        row = layout.row()
-        row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
-        row = layout.row()
-        #row.operator("node.zeno_apply", text="Apply")
-        #row.operator("node.zeno_stop", text="Stop")
+        layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
 #class ZenoNode_BlenderLineViewer(def_node_class('BlenderLineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):

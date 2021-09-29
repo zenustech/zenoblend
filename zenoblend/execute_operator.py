@@ -2,10 +2,10 @@ import bpy
 import time
 from . import scenario
 
-'''
-class ZenoApplyOperator(bpy.types.Operator):
-    """Apply the Zeno graph"""
-    bl_idname = "node.zeno_apply"
+#'''
+class ZenoStartOperator(bpy.types.Operator):
+    """Start the Zeno instance"""
+    bl_idname = "node.zeno_start"
     bl_label = "Apply"
 
     @classmethod
@@ -13,33 +13,32 @@ class ZenoApplyOperator(bpy.types.Operator):
         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
     def execute(self, context):
-        data = dump_scene()
         t0 = time.time()
-        scenario.load_scene(data)
+        scenario.reload_scene()
         if not scenario.frame_update_callback():
-            self.report({'ERROR'}, 'No node tree specified! Please check the Zeno Scene panel.')
+            self.report({'ERROR'}, 'No node tree found!')
         else:
             dt = time.time() - t0
             self.report({'INFO'}, 'Node tree applied in {:.04f}s'.format(dt))
         return {'FINISHED'}
-'''
+#'''
 
 
-# class ZenoStopOperator(bpy.types.Operator):
-#     """Stop the running Zeno graph"""
-#     bl_idname = "node.zeno_stop"
-#     bl_label = "Stop"
+class ZenoStopOperator(bpy.types.Operator):
+    """Stop the running Zeno instance"""
+    bl_idname = "node.zeno_stop"
+    bl_label = "Stop"
 
-#     @classmethod
-#     def poll(cls, context):
-#         return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
+    @classmethod
+    def poll(cls, context):
+        return getattr(context.space_data, 'tree_type', 'ZenoNodeTree') == 'ZenoNodeTree'
 
-#     def execute(self, context):
-#         if scenario.delete_scene():
-#             self.report({'INFO'}, 'Node tree stopped')
-#         else:
-#             self.report({'WARNING'}, 'Node tree already stopped!')
-#         return {'FINISHED'}
+    def execute(self, context):
+        if scenario.delete_scene():
+            self.report({'INFO'}, 'Node tree stopped')
+        else:
+            self.report({'WARNING'}, 'Node tree already stopped!')
+        return {'FINISHED'}
 
 
 class ZenoReloadOperator(bpy.types.Operator):
@@ -63,8 +62,8 @@ class ZenoReloadOperator(bpy.types.Operator):
 def draw_menu(self, context):
     if context.area.ui_type == 'ZenoNodeTree':
         self.layout.separator()
-        #self.layout.operator("node.zeno_apply", text="Apply Graph")
-        #self.layout.operator("node.zeno_stop", text="Stop Running Graph")  # deprecated
+        self.layout.operator("node.zeno_start", text="Start Zeno")
+        self.layout.operator("node.zeno_stop", text="Stop Zeno")
         self.layout.operator("node.zeno_reload", text="Reload Graph Nodes")
 
 
@@ -166,15 +165,9 @@ class ZenoScenePanel(bpy.types.Panel):
             if tree.zeno_cached:
                 cached_to_frame = tree.nextFrameId - 1 if getattr(tree, "nextFrameId", None) else ''
                 col.label(text=f"Cached to frame: {cached_to_frame}")
-        '''
         row = layout.row()
-        row.operator('node.zeno_apply')
-        if tree.zeno_cached:
-            if scene.frame_current != scene.zeno.frame_start: 
-                row.enabled = False # gray out button
-        elif tree.zeno_realtime_update:
-            row.enabled = False
-        '''
+        row.operator('node.zeno_start')
+        row.operator('node.zeno_stop')
         
 
 classes = (

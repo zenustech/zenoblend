@@ -103,9 +103,10 @@ def meshToBlender(meshPtr, mesh):
 
     # loop attributes are considered to be vertex color now...
     for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
-        if attrName not in mesh.vertex_colors:
-            mesh.vertex_colors.active = mesh.vertex_colors.new(name=attrName)
-        loopColorPtr = mesh.vertex_colors[attrName].data[0].as_pointer() if loopCount else 0
+        bl_attr_name = 'Zeno_'+attrName
+        if bl_attr_name not in mesh.vertex_colors:
+            mesh.vertex_colors.new(name=bl_attr_name)
+        loopColorPtr = mesh.vertex_colors[bl_attr_name].data[0].as_pointer() if loopCount else 0
         core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
@@ -131,7 +132,6 @@ def meshToBlender(meshPtr, mesh):
 
 
 sceneId = None
-nextFrameId = None
 lastJsonStr = None
 
 
@@ -148,7 +148,7 @@ def load_scene(jsonStr):
 def reload_scene():  # todo: have an option to turn off this
     global sceneId
     global lastJsonStr
-    from .execute_operator import dump_scene
+    from .tree_dumper import dump_scene
     jsonStr = dump_scene()
     if lastJsonStr == jsonStr:
         return False
@@ -161,15 +161,18 @@ def reload_scene():  # todo: have an option to turn off this
 
 def delete_scene():
     hadScene = False
-    global sceneId
-    global nextFrameId
-    print(time.strftime('[%H:%M:%S]'), 'delete_scene')
-    nextFrameId = None
+    global sceneId   
+    print(time.strftime('[%H:%M:%S]'), 'delete_scene')   
     if sceneId is not None:
         core.deleteScene(sceneId)
         hadScene = True
     sceneId = None
-    frameCache.clear()
+    
+    for nodetree in get_enabled_trees():
+        nodetree.nextFrameId = None
+        if not hasattr(nodetree, "frameCache"):
+            nodetree.frameCache = {}
+        nodetree.frameCache.clear()
     return hadScene
 
 
@@ -196,7 +199,7 @@ def graph_deal_input(graphPtr, inputName):
     return prepareCallback
 
 
-def graph_deal_output(graphPtr, outputName, is_framed):
+def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
     if outputName not in bpy.data.objects:
         print('WARNING: object `{}` not exist, creating now'.format(outputName))
         blenderMesh = bpy.data.meshes.new(outputName)
@@ -219,7 +222,10 @@ def graph_deal_output(graphPtr, outputName, is_framed):
 
     if is_framed:
         currFrameId = bpy.context.scene.frame_current
-        currFrameCache = frameCache.setdefault(currFrameId, {})
+        tree = bpy.data.node_groups[graph_name]
+        if not hasattr(tree, "frameCache"):
+            tree.frameCache = {}
+        currFrameCache = tree.frameCache.setdefault(currFrameId, {})
         currFrameCache[blenderObj.name] = blenderMesh.name
 
     meshToBlender(outMeshPtr, blenderMesh)
@@ -243,13 +249,13 @@ def execute_scene(graph_name, is_framed):
     outputNames = core.graphGetOutputNames(graphPtr)
     print('graph outputs:', outputNames)
     for outputName in outputNames:
-        graph_deal_output(graphPtr, outputName, is_framed)
+        graph_deal_output(graph_name, graphPtr, outputName, is_framed)
 
     for cb in prepareCallbacks:
         cb()
 
     from .gpu_drawer import draw_graph
-    draw_graph(graphPtr)
+    draw_graph(graph_name, graphPtr)
 
 
 def get_dependencies(graph_name):
@@ -259,27 +265,23 @@ def get_dependencies(graph_name):
     inputNames = core.graphGetInputNames(graphPtr)
     return inputNames
 
-
-frameCache = {}
-
-
 def update_frame(graph_name):
-    global nextFrameId
+    tree = bpy.data.node_groups[graph_name]
     currFrameId = bpy.context.scene.frame_current
-    if nextFrameId is None:
-        nextFrameId = bpy.context.scene.zeno.frame_start
+    if tree.nextFrameId is None:
+        tree.nextFrameId = bpy.context.scene.zeno.frame_start
     if currFrameId > bpy.context.scene.zeno.frame_end:
         return
-    if currFrameId == nextFrameId:
+    if currFrameId == tree.nextFrameId:
         print(time.strftime('[%H:%M:%S]'), 'update_frame at', currFrameId)
         t0 = time.time()
         execute_scene(graph_name, is_framed=True)
         print('update_frame spent', '{:.4f}s'.format(time.time() - t0))
-        nextFrameId = currFrameId + 1
+        tree.nextFrameId = currFrameId + 1
 
-    if currFrameId not in frameCache:
+    if currFrameId not in tree.frameCache:
         return
-    for objName, meshName in frameCache[currFrameId].items():
+    for objName, meshName in tree.frameCache[currFrameId].items():
         if objName not in bpy.data.objects:
             continue
         if meshName not in bpy.data.meshes:
@@ -298,14 +300,8 @@ def update_scene(graph_name):
     print('update_scene spent', '{:.4f}s'.format(time.time() - t0))
 
 
-def get_tree_names():
-    static_tree = bpy.context.scene.zeno.node_tree_static
-    framed_tree = bpy.context.scene.zeno.node_tree_framed
-    if static_tree and static_tree not in bpy.data.node_groups:
-        raise Exception('Invalid static node tree name! Please check in Zeno Scene panel.')
-    if framed_tree and framed_tree not in bpy.data.node_groups:
-        raise Exception('Invalid framed node tree name! Please check in Zeno Scene panel.')
-    return static_tree, framed_tree
+def get_enabled_trees():
+    return [t for t in bpy.data.node_groups if t.bl_idname == 'ZenoNodeTree' and t.zeno_enabled]
 
 
 @bpy.app.handlers.persistent
@@ -317,15 +313,20 @@ def frame_update_callback(*unused):
     try:
         nowUpdating = True
 
-        static_tree, framed_tree = get_tree_names()
-        if not static_tree and not framed_tree:
-            return False
-
+        # static_tree, framed_tree = get_tree_names()
+        #if not static_tree and not framed_tree:
+        #    return False
         reload_scene()
-        if framed_tree:
-            update_frame(framed_tree)
-        if static_tree:
-            update_scene(static_tree)
+        for tree in get_enabled_trees():
+            if tree.zeno_cached:
+                update_frame(tree.name)
+            else:
+                update_scene(tree.name)
+        
+        # if framed_tree:
+        #     update_frame(framed_tree)
+        # if static_tree:
+        #     update_scene(static_tree)
         return True
     finally:
         nowUpdating = False
@@ -339,40 +340,51 @@ def scene_update_callback(scene, depsgraph):
     if sceneId is None:
         return
 
-    static_tree, framed_tree = get_tree_names()
-    if not static_tree:
-        return
-    our_deps = get_dependencies(static_tree)
+    scene_reloaded = False
 
-    needs_update = False
-    for update in depsgraph.updates:
-        object = update.id
-        if isinstance(object, bpy.types.Mesh):
-            object = object.id_data
-        if not isinstance(object, bpy.types.Object):
-            continue
-        if object.name in our_deps:
-            print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
-            needs_update = True
-            break
-    else:
+    for tree in get_enabled_trees():
+        if tree.zeno_realtime_update:
+            if tree.zeno_cached:
+                reload_scene()
+                update_frame(tree.name)
+               
+            else:
+                static_tree = tree.name
+                our_deps = get_dependencies(static_tree)
 
-        if reload_scene():
-            print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
-            needs_update = True
+                needs_update = False
+                for update in depsgraph.updates:
+                    object = update.id
+                    if isinstance(object, bpy.types.Mesh):
+                        object = object.id_data
+                    if not isinstance(object, bpy.types.Object):
+                        continue
+                    if object.name in our_deps:
+                        print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
+                        needs_update = True
+                        break
+                else:
+                    if scene_reloaded or reload_scene():
+                        print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
+                        needs_update = True
+                        scene_reloaded = True  # avoid reloading scene more than one time
 
-    if not needs_update:
-        return
+                if not needs_update:
+                    return
 
-    global nowUpdating
-    if not nowUpdating:
-        try:
-            nowUpdating = True
-            static_tree, framed_tree = get_tree_names()
-            if static_tree:
-                update_scene(static_tree)
-        finally:
-            nowUpdating = False
+                global nowUpdating
+                if not nowUpdating:
+                    try:
+                        nowUpdating = True
+                        #static_tree, framed_tree = get_tree_names()
+                        if static_tree:
+                            update_scene(static_tree)
+                    finally:
+                        nowUpdating = False
+
+#@bpy.app.handlers.persistent
+#def load_post_callback(dummy):
+    #bpy.ops.node.zeno_apply()
 
 
 def register():
@@ -380,6 +392,8 @@ def register():
         bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
+    #if load_post_callback not in bpy.app.handlers.load_post:
+        #bpy.app.handlers.load_post.append(load_post_callback)
 
 
 def unregister():
@@ -388,3 +402,5 @@ def unregister():
         bpy.app.handlers.frame_change_post.remove(frame_update_callback)
     if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)
+    #if load_post_callback in bpy.app.handlers.load_post:
+        #bpy.app.handlers.load_post.remove(load_post_callback)

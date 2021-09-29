@@ -4,8 +4,10 @@ from nodeitems_utils import NodeCategory, NodeItem
 from nodeitems_utils import register_node_categories
 from nodeitems_utils import unregister_node_categories
 from bpy.utils import register_class, unregister_class
-from .scenario import reload_scene, frame_update_callback
-from .gpu_drawer import clear_draw_handler
+from . import scenario
+from . import gpu_drawer
+from . import tree_dumper
+
 
 class ZenoNodeTree(NodeTree):
     '''Zeno node tree type'''
@@ -21,18 +23,20 @@ class ZenoNodeTree(NodeTree):
 
     def enabled_callback(self, context):
         if self.zeno_enabled:  # if the state is switched from false to true
-            frame_update_callback()
+            scenario.reload_scene()
+            scenario.frame_update_callback()
         else:
-            clear_draw_handler(self)
-            reload_scene()
+            gpu_drawer.clear_draw_handler(self)
+            scenario.reload_scene()
 
     def realtime_update_callback(self, context):
         if self.zeno_realtime_update:  # if the state is switched from false to true
-            bpy.ops.node.zeno_apply()
+            scenario.reload_scene()
+            scenario.frame_update_callback()
 
     def cached_callback(self, context):
         if self.zeno_cached:  # if the state is switched from false to true
-            frame_update_callback()
+            scenario.frame_update_callback()
         else:
             self.frameCache = {}
             self.nextFrameId = None
@@ -262,7 +266,6 @@ def def_node_class(name, inputs, outputs, category):
         def update(self):  # rewrite update function
             if self.id_data.zeno_realtime_update:
                 print('updating by node edit')
-                from . import scenario
                 scenario.frame_update_callback()
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
@@ -289,7 +292,7 @@ class ZenoNode_Subgraph(def_node_class('Subgraph', [], [], 'subgraph')):
 
     def reinit(self):
         tree = bpy.data.node_groups[self.graph_name]
-        from .execute_operator import find_tree_sub_io_names
+        from .tree_dumper import find_tree_sub_io_names
         self.zeno_inputs, self.zeno_outputs = find_tree_sub_io_names(tree)
 
         self.reinit_sockets(self.zeno_inputs, self.zeno_outputs)
@@ -300,7 +303,7 @@ class ZenoNode_FinalOutput(def_node_class('FinalOutput', [], [], 'subgraph')):
 
     def draw_buttons(self, context, layout):
         row = layout.row()
-        row.operator("node.zeno_apply", text="Apply")
+        #row.operator("node.zeno_apply", text="Apply")
         #row.operator("node.zeno_stop", text="Stop")
 
 
@@ -315,7 +318,7 @@ class ZenoNode_BlenderInputText:
         row.prop_search(self, 'text', bpy.data, 'texts', text='', icon='TEXT')
 
 class ZenoNode_BlenderInputAxes:
-    '''Zeno specialized mixin BlenderInputPrimitive node'''
+    '''Zeno specialized mixin BlenderInputAxes node'''
     objid: bpy.props.StringProperty()
 
     bpy_data_inputs = {'objid': 'objects'}
@@ -345,7 +348,7 @@ class ZenoNode_BlenderOutputPrimitive:
         row = layout.row()
         row.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
         row = layout.row()
-        row.operator("node.zeno_apply", text="Apply")
+        #row.operator("node.zeno_apply", text="Apply")
         #row.operator("node.zeno_stop", text="Stop")
 
 
@@ -434,7 +437,7 @@ def init_node_subgraphs():
 
     node_pre_subgraph_categories = {}
     for tree_name, tree in bpy.data.node_groups.items():
-        from .execute_operator import find_tree_sub_category
+        from .tree_dumper import find_tree_sub_category
         category = find_tree_sub_category(tree)
         node_pre_subgraph_categories.setdefault(category, []).append(tree_name)
 

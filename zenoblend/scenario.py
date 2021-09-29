@@ -148,7 +148,7 @@ def load_scene(jsonStr):
 def reload_scene():  # todo: have an option to turn off this
     global sceneId
     global lastJsonStr
-    from .execute_operator import dump_scene
+    from .tree_dumper import dump_scene
     jsonStr = dump_scene()
     if lastJsonStr == jsonStr:
         return False
@@ -382,9 +382,9 @@ def scene_update_callback(scene, depsgraph):
                     finally:
                         nowUpdating = False
 
-@bpy.app.handlers.persistent
-def load_post_callback(dummy):
-    bpy.ops.node.zeno_apply()
+#@bpy.app.handlers.persistent
+#def load_post_callback(dummy):
+    #bpy.ops.node.zeno_apply()
 
 
 def register():
@@ -392,8 +392,8 @@ def register():
         bpy.app.handlers.frame_change_post.append(frame_update_callback)
     if scene_update_callback not in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.append(scene_update_callback)
-    if load_post_callback not in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.append(load_post_callback)
+    #if load_post_callback not in bpy.app.handlers.load_post:
+        #bpy.app.handlers.load_post.append(load_post_callback)
 
 
 def unregister():
@@ -402,5 +402,5 @@ def unregister():
         bpy.app.handlers.frame_change_post.remove(frame_update_callback)
     if scene_update_callback in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(scene_update_callback)
-    if load_post_callback in bpy.app.handlers.load_post:
-        bpy.app.handlers.load_post.remove(load_post_callback)
+    #if load_post_callback in bpy.app.handlers.load_post:
+        #bpy.app.handlers.load_post.remove(load_post_callback)

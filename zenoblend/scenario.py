@@ -150,7 +150,7 @@ def reload_scene():  # todo: have an option to turn off this
     global lastJsonStr
     from .tree_dumper import dump_scene
     jsonStr = dump_scene()
-    if lastJsonStr == jsonStr:
+    if sceneId is not None and lastJsonStr == jsonStr:
         return False
     print(time.strftime('[%H:%M:%S]'), 'reload_scene')
     t0 = time.time()

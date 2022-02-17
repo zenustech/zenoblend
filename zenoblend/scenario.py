@@ -137,6 +137,8 @@ def meshToBlender(meshPtr, mesh):
     edgePtr = mesh.edges[0].as_pointer() if edgeCount else 0
     core.meshGetEdges(meshPtr, edgePtr, edgeCount)
 
+    mesh.use_auto_smooth = core.meshGetUseAutoSmooth(meshPtr)
+
     mesh.update()
 
 

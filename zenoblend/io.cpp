@@ -183,6 +183,7 @@ struct BlenderOutputPrimitive : INode {
         }
 
         mesh->is_smooth = get_param<bool>("is_smooth");
+        mesh->use_auto_smooth = get_param<bool>("use_auto_smooth");
 
         if (get_param<bool>("has_faces")) {
             mesh->poly.resize(prim->tris.size() + prim->quads.size());
@@ -256,6 +257,7 @@ ZENDEFNODE(BlenderOutputPrimitive, {
     {"mesh"},
     {
     {"bool", "is_smooth", "0"},
+    {"bool", "use_auto_smooth", "0"},
     {"bool", "has_vert_color", "0"},
     {"bool", "has_vert_attr", "0"},
     {"bool", "has_face_attr", "0"},

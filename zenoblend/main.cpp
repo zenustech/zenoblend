@@ -395,6 +395,14 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         }
     });
 
+    m.def("meshGetUseAutoSmooth", []
+        ( uintptr_t meshPtr
+        ) -> bool
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh*>(meshPtr);
+        return mesh->use_auto_smooth;
+    });
+
     py::bind_vector<std::vector<float>>(m, "FloatVec3");
     py::bind_vector<std::vector<std::vector<float>>>(m, "FloatVec3Array");
     py::bind_vector<std::vector<int>>(m, "IntVec2");

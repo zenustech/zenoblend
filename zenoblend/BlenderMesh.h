@@ -37,6 +37,7 @@ struct BlenderAxis : IObjectClone<BlenderAxis> {
 
 struct BlenderMesh : IObjectClone<BlenderMesh, BlenderAxis>, PolyMesh {
     bool is_smooth = false;
+    bool use_auto_smooth = false;
 };
 
 struct BlenderData {

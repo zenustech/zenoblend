@@ -70,7 +70,10 @@ def meshFromBlender(mesh):
     polyCount = len(mesh.polygons)
     polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
 
-    return vertPtr, vertCount, loopPtr, loopCount, polyPtr, polyCount
+    edgeCount = len(mesh.edges)
+    edgePtr = mesh.edges[0].as_pointer() if edgeCount else 0
+
+    return vertPtr, vertCount, loopPtr, loopCount, polyPtr, polyCount, edgePtr, edgeCount
 
 
 def meshToBlender(meshPtr, mesh):
@@ -127,6 +130,12 @@ def meshToBlender(meshPtr, mesh):
         if polyCount:
             polyAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
             core.meshGetPolyAttr(meshPtr, attrName, polyAttrPtr, polyCount)
+
+    edgeCount = core.meshGetEdgesCount(meshPtr)
+    mesh.edges.add(edgeCount)
+    assert edgeCount == len(mesh.edges), (edgeCount, len(mesh.edges))
+    edgePtr = mesh.edges[0].as_pointer() if edgeCount else 0
+    core.meshGetEdges(meshPtr, edgePtr, edgeCount)
 
     mesh.update()
 

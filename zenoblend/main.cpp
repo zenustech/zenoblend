@@ -125,6 +125,8 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             , size_t loopCount
             , uintptr_t polyPtr
             , size_t polyCount
+            , uintptr_t edgePtr
+            , size_t edgeCount
             ) -> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
@@ -147,6 +149,11 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             auto poly = reinterpret_cast<MPoly const *>(polyPtr);
             for (int i = 0; i < polyCount; i++) {
                 mesh->poly[i] = {poly[i].loopstart, poly[i].totloop};
+            }
+            mesh->edge.resize(edgeCount);
+            auto edge = reinterpret_cast<MEdge const *>(edgePtr);
+            for (int i = 0; i < edgeCount; i++) {
+                mesh->edge[i] = {edge[i].v1, edge[i].v2};
             }
             return mesh;
         };
@@ -315,6 +322,28 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
         for (int i = 0; i < loopCount; i++) {
             loop[i].v = mesh->loop[i];
             loop[i].e = 0;
+        }
+    });
+
+    m.def("meshGetEdgesCount", []
+        ( uintptr_t meshPtr
+        ) -> size_t
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        return mesh->edge.size();
+    });
+
+    m.def("meshGetEdges", []
+            ( uintptr_t meshPtr
+            , uintptr_t edgePtr
+            , size_t edgeCount
+            ) -> void
+    {
+        auto mesh = reinterpret_cast<zeno::BlenderMesh *>(meshPtr);
+        auto edge = reinterpret_cast<MEdge *>(edgePtr);
+        for (int i = 0; i < edgeCount; i++) {
+            edge[i].v1 = mesh->edge[i].src;
+            edge[i].v2 = mesh->edge[i].dst;
         }
     });
 

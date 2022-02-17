@@ -82,6 +82,8 @@ struct BlenderInputPrimitive : INode {
         auto prim = std::make_shared<PrimitiveObject>();
         auto allow_quads = get_param<bool>("allow_quads");
         auto do_transform = get_param<bool>("do_transform");
+        auto has_edges = get_param<bool>("has_edges");
+        auto has_faces = get_param<bool>("has_faces");
 
         // todo: support **input** blender attributes
         prim->resize(mesh->vert.size());
@@ -104,28 +106,38 @@ struct BlenderInputPrimitive : INode {
             }
         }
 
-        for (int i = 0; i < mesh->poly.size(); i++) {
-            auto [start, len] = mesh->poly[i];
-            if (len < 3) continue;
-            if (len == 4 && allow_quads) {
-                prim->quads.emplace_back(
-                        mesh->loop[start + 0],
-                        mesh->loop[start + 1],
-                        mesh->loop[start + 2],
-                        mesh->loop[start + 3]);
-                continue;
-            }
-            prim->tris.emplace_back(
-                    mesh->loop[start + 0],
-                    mesh->loop[start + 1],
-                    mesh->loop[start + 2]);
-            for (int j = 3; j < len; j++) {
-                prim->tris.emplace_back(
-                        mesh->loop[start + 0],
-                        mesh->loop[start + j - 1],
-                        mesh->loop[start + j]);
+        if (has_edges) {
+            for (int i = 0; i < mesh->edge.size(); i++) {
+                auto [src, dst] = mesh->edge[i];
+                prim->lines.emplace_back(src, dst);
             }
         }
+
+        if (has_faces) {
+            for (int i = 0; i < mesh->poly.size(); i++) {
+                auto [start, len] = mesh->poly[i];
+                if (len < 3) continue;
+                if (len == 4 && allow_quads) {
+                    prim->quads.emplace_back(
+                            mesh->loop[start + 0],
+                            mesh->loop[start + 1],
+                            mesh->loop[start + 2],
+                            mesh->loop[start + 3]);
+                    continue;
+                }
+                prim->tris.emplace_back(
+                        mesh->loop[start + 0],
+                        mesh->loop[start + 1],
+                        mesh->loop[start + 2]);
+                for (int j = 3; j < len; j++) {
+                    prim->tris.emplace_back(
+                            mesh->loop[start + 0],
+                            mesh->loop[start + j - 1],
+                            mesh->loop[start + j]);
+                }
+            }
+        }
+
         set_output("prim", std::move(prim));
         set_output2("object", std::move(object));
     }
@@ -134,7 +146,12 @@ struct BlenderInputPrimitive : INode {
 ZENDEFNODE(BlenderInputPrimitive, {
     {},
     {"prim"},
-    {{"bool", "allow_quads", "0"}, {"bool", "do_transform", "1"}},
+    {
+    {"bool", "allow_quads", "0"},
+    {"bool", "do_transform", "1"},
+    {"bool", "has_edges", "0"},
+    {"bool", "has_faces", "1"},
+    },
     {"blender"},
 });
 
@@ -166,45 +183,48 @@ struct BlenderOutputPrimitive : INode {
         }
 
         mesh->is_smooth = get_param<bool>("is_smooth");
-        mesh->poly.resize(prim->tris.size() + prim->quads.size());
-        mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
-        #pragma omp parallel for
-        for (int i = 0; i < prim->tris.size(); i++) {
-            auto e = prim->tris[i];
-            mesh->loop[i*3 + 0] = e[0];
-            mesh->loop[i*3 + 1] = e[1];
-            mesh->loop[i*3 + 2] = e[2];
-            mesh->poly[i] = {i*3, 3};
-        }
-        if (get_param<bool>("has_face_attr")) {
-            prim->tris.foreach_attr([&] (auto const &key, auto const &attr) {
-                using T = std::decay_t<decltype(attr[0])>;
-                auto &arr = mesh->poly.add_attr<T>(key);
-                for (int i = 0; i < prim->tris.size(); i++) {
-                    arr[i] = attr[i];
-                }
-            });
-        }
 
-        int base_loop = prim->tris.size() * 3;
-        int base_poly = prim->tris.size();
-        #pragma omp parallel for
-        for (int i = 0; i < prim->quads.size(); i++) {
-            auto e = prim->quads[i];
-            mesh->loop[base_loop + i*4 + 0] = e[0];
-            mesh->loop[base_loop + i*4 + 1] = e[1];
-            mesh->loop[base_loop + i*4 + 2] = e[2];
-            mesh->loop[base_loop + i*4 + 3] = e[3];
-            mesh->poly[base_poly + i] = {base_loop + i*4, 4};
-        }
-        if (get_param<bool>("has_face_attr")) {
-            prim->quads.foreach_attr([&] (auto const &key, auto const &attr) {
-                using T = std::decay_t<decltype(attr[0])>;
-                auto &arr = mesh->poly.add_attr<T>(key);
-                for (int i = 0; i < prim->tris.size(); i++) {
-                    arr[base_poly + i] = attr[i];
-                }
-            });
+        if (get_param<bool>("has_faces")) {
+            mesh->poly.resize(prim->tris.size() + prim->quads.size());
+            mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
+            #pragma omp parallel for
+            for (int i = 0; i < prim->tris.size(); i++) {
+                auto e = prim->tris[i];
+                mesh->loop[i*3 + 0] = e[0];
+                mesh->loop[i*3 + 1] = e[1];
+                mesh->loop[i*3 + 2] = e[2];
+                mesh->poly[i] = {i*3, 3};
+            }
+            if (get_param<bool>("has_face_attr")) {
+                prim->tris.foreach_attr([&] (auto const &key, auto const &attr) {
+                    using T = std::decay_t<decltype(attr[0])>;
+                    auto &arr = mesh->poly.add_attr<T>(key);
+                    for (int i = 0; i < prim->tris.size(); i++) {
+                        arr[i] = attr[i];
+                    }
+                });
+            }
+
+            int base_loop = prim->tris.size() * 3;
+            int base_poly = prim->tris.size();
+            #pragma omp parallel for
+            for (int i = 0; i < prim->quads.size(); i++) {
+                auto e = prim->quads[i];
+                mesh->loop[base_loop + i*4 + 0] = e[0];
+                mesh->loop[base_loop + i*4 + 1] = e[1];
+                mesh->loop[base_loop + i*4 + 2] = e[2];
+                mesh->loop[base_loop + i*4 + 3] = e[3];
+                mesh->poly[base_poly + i] = {base_loop + i*4, 4};
+            }
+            if (get_param<bool>("has_face_attr")) {
+                prim->quads.foreach_attr([&] (auto const &key, auto const &attr) {
+                    using T = std::decay_t<decltype(attr[0])>;
+                    auto &arr = mesh->poly.add_attr<T>(key);
+                    for (int i = 0; i < prim->tris.size(); i++) {
+                        arr[base_poly + i] = attr[i];
+                    }
+                });
+            }
         }
 
         if (get_param<bool>("has_vert_color")) {
@@ -216,6 +236,15 @@ struct BlenderOutputPrimitive : INode {
                     arr[i] = attr[mesh->loop[i]];
                 }
             });
+        }
+
+        if (get_param<bool>("has_edges")) {
+            mesh->edge.resize(prim->lines.size());
+            #pragma omp parallel for
+            for (int i = 0; i < prim->lines.size(); i++) {
+                auto e = prim->lines[i];
+                mesh->edge[i] = {e[0], e[1]};
+            }
         }
 
         ud.outputs[objid] = std::move(mesh);
@@ -230,6 +259,8 @@ ZENDEFNODE(BlenderOutputPrimitive, {
     {"bool", "has_vert_color", "0"},
     {"bool", "has_vert_attr", "0"},
     {"bool", "has_face_attr", "0"},
+    {"bool", "has_edges", "0"},
+    {"bool", "has_faces", "1"},
     {"bool", "active", "1"},
     },
     {"blender"},

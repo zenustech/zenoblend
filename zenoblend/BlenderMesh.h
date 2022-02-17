@@ -17,7 +17,16 @@ struct PolyMesh {
             : start(start), len(len) {}
     };
 
+    struct Edge {
+        int src = 0, dst = 0;
+
+        inline Edge() = default;
+        inline Edge(int src, int dst)
+            : src(src), dst(dst) {}
+    };
+
     AttrVector<vec3f> vert;
+    AttrVector<Edge> edge;
     AttrVector<Polygon> poly;
     AttrVector<int> loop;
 };

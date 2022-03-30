@@ -130,6 +130,8 @@ def fix_missing_libs(src_dir, dst_dir):
             lhs = lhs.strip()
             rhs = rhs.strip()
             if not rhs: continue
+            lhs = os.path.abspath(lhs)
+            rhs = os.path.abspath(rhs)
             print('{} => {}'.format(lhs, rhs))
             if lhs in resolved:
                 assert rhs == resolved[lhs], (rhs, resolved[lhs])

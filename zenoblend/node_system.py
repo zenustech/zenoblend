@@ -335,6 +335,23 @@ class ZenoNode_BlenderInputPrimitive:
         layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
 
 
+class ZenoNode_BlenderInputCollection:
+    '''Zeno specialized mixin BlenderInputCollection node'''
+    colid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'colid' : 'collections'}
+
+    def draw_buttons(self,context,layout):
+        layout.prop_search(self,'colid',bpy.data,'collections',text='',icon='COLLECTION_NEW')
+
+class ZenoNode_BlenderInputArmature:
+    '''Zeno specialized mixin BlenderInputArmature node'''
+    armid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'armid' : 'armatures'}
+    def draw_buttons(self,context,layout):
+        layout.prop_search(self,'armid',bpy.data,'armatures',text='',icon='ARMATURE_DATA')
+
 class ZenoNode_BlenderOutputPrimitive:
     '''Zeno specialized mixin BlenderOutputPrimitive node'''
     objid: bpy.props.StringProperty()
@@ -347,6 +364,7 @@ class ZenoNode_BlenderOutputPrimitive:
 
 #class ZenoNode_BlenderLineViewer(def_node_class('BlenderLineViewer', [('PrimitiveObject', 'prim', ''), ('bool', 'display:', '1')], [], 'blender')):
 #    '''Zeno specialized BlenderLineViewer node'''
+
 
 
 

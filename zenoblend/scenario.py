@@ -28,13 +28,7 @@ def _prepare_mesh(obj, depsgraph, no_modifiers=False):
         mesh = object_eval.to_mesh()
 
         if mesh:
-            # TODO test if this makes sense
-            # If negative scaling, we have to invert the normals
-            # if not mesh.has_custom_normals and object_eval.matrix_world.determinant() < 0.0:
-            #     # Does not handle custom normals
-            #     mesh.flip_normals()
-
-            mesh.calc_loop_triangles()
+            # TODO test if this makes sensegraphSetInputMesh2
             if not mesh.loop_triangles:
                 object_eval.to_mesh_clear()
                 mesh = None
@@ -68,6 +62,7 @@ def meshFromBlender(mesh):
     loopPtr = mesh.loops[0].as_pointer() if loopCount else 0
 
     polyCount = len(mesh.polygons)
+
     polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
 
     edgeCount = len(mesh.edges)
@@ -160,6 +155,7 @@ def reload_scene():  # todo: have an option to turn off this
     global sceneId
     global lastJsonStr
     from .tree_dumper import dump_scene
+    print("reload")
     jsonStr = dump_scene()
     if sceneId is not None and lastJsonStr == jsonStr:
         return False
@@ -186,26 +182,27 @@ def delete_scene():
         nodetree.frameCache.clear()
     return hadScene
 
-
+# if the input name is not an object's name, it might be a collection name
 def graph_deal_input(graphPtr, inputName):
     if inputName not in bpy.data.objects:
         raise RuntimeError('No object named `{}` in scene'.format(inputName))
+        # return lambda: None
     blenderObj = bpy.data.objects[inputName]
     matrix = tuple(map(tuple, blenderObj.matrix_world))
+
+    # print("matrix_world:\n{}".format(matrix))
     depsgraph = bpy.context.evaluated_depsgraph_get()
     prepareCallback = lambda: None
-    blenderMesh = blenderObj.data
 
-    if blenderMesh is None:
+    # An Axis
+    if blenderObj.type == 'EMPTY':
         core.graphSetInputAxis(graphPtr, inputName, matrix)
-
-    elif isinstance(blenderMesh, bpy.types.Mesh):
+    # A Mesh
+    elif blenderObj.type == 'MESH':
         preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
-        meshData = meshFromBlender(preparedMesh)
-        core.graphSetInputMesh(graphPtr, inputName, matrix, *meshData)
-
+        core.graphSetInputMesh2(graphPtr,inputName,matrix,blenderObj.data.as_pointer())
     else:
-        raise RuntimeError('Unexpected input object type: {}'.format(blenderMesh))
+        raise RuntimeError('Unexpected input object type: {}'.format(blenderObj.type))
 
     return prepareCallback
 
@@ -227,6 +224,11 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
             blenderMesh = blenderObj.data
 
     outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
+    # print("outMeshAttrs:")
+    # for attrName, attrType in core.meshGetVertAttrNameType(outMeshPtr).items():
+    #     print("attrName : {}",format(attrName))
+
+
     matrix = core.meshGetMatrix(outMeshPtr)
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
@@ -242,31 +244,110 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
     meshToBlender(outMeshPtr, blenderMesh)
 
 
+def graph_deal_collection_input(graphPtr,_inputColName): # return a list a mesh callbacks
+    colName = _inputColName[4:]
+    if colName not in bpy.data.collections:
+        raise RuntimeError('No collection named `{}` in scene'.format(colName))
+    C = bpy.data.collections[colName]
+    cbs = []
+    for objName in C.all_objects.keys():
+        if bpy.data.objects[objName].type == 'MESH':
+            cbs.append(graph_deal_input(graphPtr,objName))
+            core.graphUpdateCollectionDict(graphPtr,colName,objName)
+    return cbs
+
+# if the input is an armature, we should update the bone-binding relationship, and input the geo of the bones
+def graph_deal_armature_input(graphPtr,_armature_name):
+    armature_name = _armature_name[4:]
+    if armature_name not in bpy.data.objects:
+        raise RuntimeError('No Armature named {} in scene'.format(armature_name))
+    A = bpy.data.objects[armature_name]
+    if A.type != 'ARMATURE':
+        raise RuntimeError('No Armature named {} in objects'.format(armature_name))
+    cbs = []
+
+    # Make sure the binded bone geometries are loaded in
+    for obj in A.children:
+        if obj.type == 'MESH':
+            cbs.append(graph_deal_input(graphPtr,obj.name))
+            # Update the bones relationship
+            # bone_name = obj.parent_bone
+            # bone = A.pose.bones[bone_name]
+            # bone_name_full = armature_name + '@' + bone_name
+            # bone_orig_rotation_mode = bone.rotation_mode
+            # bone.rotation_mode = 'QUATERNION'
+            # core.graphSetInputBone(graphPtr,bone_name_full,obj.matrix_world,bone.rotation_quaternion,bone.location)
+            # core.graphUpdateArmature2BonesDict(graphPtr,armature_name,bone_name_full)
+            # core.graphUpdateBone2GeosDict(graphPtr,bone_name_full,obj.name)
+            # bone.rotation_mode = bone_orig_rotation_mode
+
+    bone2idx = {}
+    for i in range(len(A.data.bones.keys())):
+        bone2idx[A.data.bones[i].name] = i
+    parent_pairs = []
+    for i in range(len(A.data.bones.keys())):
+        bone = A.data.bones[i]
+        bone_name_full = armature_name + '@' + bone.name
+        if bone.parent is None:    
+                parent_pairs.append((bone_name_full,-1))
+        else:       
+            parent_pairs.append((bone_name_full,bone2idx[bone.parent.name]))
+
+
+
+    return cbs
+
+
 def execute_scene(graph_name, is_framed):
+    t0 = time.time()
+
+
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
-
     core.graphClearDrawBuffer(graphPtr)
 
+    # print('T1 spent', '{:.4f}s'.format(time.time() - t0))
+
+    t0 = time.time()
+
     prepareCallbacks = []
-    inputNames = core.graphGetInputNames(graphPtr)
-    print('graph inputs:', inputNames)
+    inputNames = core.graphGetInputNames(graphPtr) # might include collection names
+    # print('graph inputs:', inputNames)
     for inputName in inputNames:
-        cb = graph_deal_input(graphPtr, inputName)
-        prepareCallbacks.append(cb)
+        if inputName.startswith('@BC_'): # collection name
+            prepareCallbacks.extend(graph_deal_collection_input(graphPtr, inputName))
+        elif inputName.startswith('@BA_'): # armature name
+            prepareCallbacks.extend(graph_deal_armature_input(graphPtr,inputName))
+        else: # input name indicating a mesh name
+            prepareCallbacks.append(graph_deal_input(graphPtr, inputName))
+
+    # print('T2 spent', '{:.4f}s'.format(time.time() - t0))
+
+    t0 = time.time()
 
     core.graphApply(graphPtr)
 
+
+    # print('T3 spent', '{:.4f}s'.format(time.time() - t0))
+
+    t0 = time.time()
+
     outputNames = core.graphGetOutputNames(graphPtr)
-    print('graph outputs:', outputNames)
+    # print('graph outputs:', outputNames)
     for outputName in outputNames:
         graph_deal_output(graph_name, graphPtr, outputName, is_framed)
 
     for cb in prepareCallbacks:
         cb()
 
+    # print('T4 spent', '{:.4f}s'.format(time.time() - t0))
+
+    t0 = time.time()
+
     from .gpu_drawer import draw_graph
     draw_graph(graph_name, graphPtr)
+
+    # print('T5 spent', '{:.4f}s'.format(time.time() - t0))
 
 
 def get_dependencies(graph_name):
@@ -348,6 +429,7 @@ nowUpdating = False
 
 @bpy.app.handlers.persistent
 def scene_update_callback(scene, depsgraph):
+    print("get_called")
     if sceneId is None:
         return
 
@@ -361,11 +443,21 @@ def scene_update_callback(scene, depsgraph):
                
             else:
                 static_tree = tree.name
-                our_deps = get_dependencies(static_tree)
+                _our_deps = get_dependencies(static_tree)
+                our_deps = set()
+                for dep in _our_deps:
+                    if dep.startswith('@BA_'):
+                        our_deps.add(dep[4:])
+                    if dep.startswith('@BC_'):
+                        colname = dep[4:]
+                        for obj in bpy.data.collections[colname].all_objects:
+                            our_deps.add(obj.name)
+                print("deps:{}".format(our_deps))
 
                 needs_update = False
                 for update in depsgraph.updates:
                     object = update.id
+                    print("update_id: {}".format(object))
                     if isinstance(object, bpy.types.Mesh):
                         object = object.id_data
                     if not isinstance(object, bpy.types.Object):
@@ -381,6 +473,7 @@ def scene_update_callback(scene, depsgraph):
                         scene_reloaded = True  # avoid reloading scene more than one time
 
                 if not needs_update:
+                    print("STILL")
                     return
 
                 global nowUpdating
@@ -389,6 +482,7 @@ def scene_update_callback(scene, depsgraph):
                         nowUpdating = True
                         #static_tree, framed_tree = get_tree_names()
                         if static_tree:
+                            print("update_scene")
                             update_scene(static_tree)
                     finally:
                         nowUpdating = False

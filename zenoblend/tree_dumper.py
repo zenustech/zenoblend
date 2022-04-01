@@ -90,4 +90,6 @@ eval_bpy_data = {
     # possibly support more bpy datablocks, like objects, images, textures
     'texts': lambda data: data.as_string(),
     'objects': lambda data: data.name,
+    'collections': lambda data: data.name,
+    'armatures': lambda data: data.name,
 }

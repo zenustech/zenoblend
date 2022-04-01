@@ -9,5 +9,7 @@ if (TARGET OpenMP::OpenMP_CXX)
     target_link_libraries(pylib_zenoblend PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+find_package(Eigen3 REQUIRED)
+
 target_include_directories(pylib_zenoblend PRIVATE . include)
-target_link_libraries(pylib_zenoblend PRIVATE zeno)
+target_link_libraries(pylib_zenoblend PRIVATE zeno Eigen3::Eigen)

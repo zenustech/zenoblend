@@ -204,57 +204,11 @@ struct BlenderInputArmature : INode {
         parmid.append(armid);
         ud.input_names.insert(parmid);
     }
-
-    zeno::vec4f rotation2Quat(const std::array<std::array<float,4>,4>& m){
-            auto m00 = m[0][0];
-            auto m01 = m[0][1];
-            auto m02 = m[0][2];
-            auto m10 = m[1][0];
-            auto m11 = m[1][1];
-            auto m12 = m[1][2];
-            auto m20 = m[2][0];
-            auto m21 = m[2][1];
-            auto m22 = m[2][2];
-
-            auto qd = zeno::vec4f(0);
-// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
-// this algorithm can bring in discontinueties
-            auto tr = m00 + m11 + m22;
-            if(tr > 0) {
-                auto s = sqrt(tr + 1) * 2;
-                qd[0] =  s / 4;             // w
-                qd[1] = (m21 - m12) / s;    // x
-                qd[2] = (m02 - m20) / s;    // y
-                qd[3] = (m10 - m01) / s;    // z
-            } else if((m00 > m11) && (m00 > m22)) {
-                auto s = sqrt(1 + m11 - m00 - m22) * 2;
-                qd[0] = (m21 - m12) / s;
-                qd[1] = s / 4;
-                qd[2] = (m01 + m10) / s;
-                qd[3] = (m02 + m20) / s;
-            } else if(m11 > m22) {
-                auto s = sqrt(1.0 + m11 - m00 - m22) * 2;
-                qd[0] = (m02 - m20) / s;
-                qd[1] = (m01 + m10) / s;
-                qd[2] = s / 4;
-                qd[3] = (m12 + m21) / s;
-            } else{
-                auto s = sqrt(1 + m22 - m00 - m11) * 2;
-                qd[0] = (m10 - m01) / s;
-                qd[1] = (m02 + m20) / s;
-                qd[2] = (m12 + m21) / s;
-                qd[3] = s / 4;
-            }
-
-            return qd;
-    }
-
 // Output the 
 // the Qs and Ts should be computed using forward kinematic
 // Deriv Qs and Ts from Affine Transformation matrices can bring in discontinueties
     virtual void apply() override {
         // std::cout << "BlenderInputArmature Get Called" << std::endl;
-
         auto start = clock();
 
         auto& ud = graph->getUserData().get<BlenderData>("blender_data");
@@ -262,86 +216,60 @@ struct BlenderInputArmature : INode {
         auto output_geos = get_param<bool>("output_geos");
         auto allow_quads = get_param<bool>("allow_quads");
 
-        const auto& bones = ud.armature2bones[armid];
+        const auto& btree = ud.armature2btree[armid];
 
         auto Qs = std::make_shared<zeno::ListObject>();
         auto Ts = std::make_shared<zeno::ListObject>();
-        auto As = std::make_shared<zeno::ListObject>();
         auto Geos = std::make_shared<zeno::ListObject>();
 
         // forward kinematic here
-        
-
-        for(const auto& bone : bones){
-            const auto bone_data = safe_at(ud.inputs, bone, "blender input")();
-
-            auto m = bone_data->matrix;
-            auto A = std::make_shared<std::array<std::array<float,4>,4>>();
-            *A = m;
+        for(const auto& bnode : btree){
+            const std::string geo_name = bnode.bone_custom_shape_idname;
+            // only output the rigging bones with geometric shapes
+            if(geo_name == std::string("None")){
+                continue;
+            }
 
             auto q = std::make_shared<zeno::NumericObject>();
             auto b = std::make_shared<zeno::NumericObject>();
 
-            auto qd = rotation2Quat(m);
+            q->set(zeno::vec4f(bnode.quat[1],bnode.quat[2],bnode.quat[3],bnode.quat[0]));
+            b->set(zeno::vec3f(bnode.b[0], bnode.b[1], bnode.b[2]));
 
-            q->set(zeno::vec4f(qd[1],qd[2],qd[3],qd[0]));
-            b->set(zeno::vec3f(m[0][3], m[1][3], m[2][3]));
-
+            // std::cout << bnode.bone_idname  << "->" << bnode.bone_custom_shape_idname << "Q:" << bnode.quat[1] << "\t" << bnode.quat[2] << "\t" << bnode.quat[3] << "\t" << bnode.quat[0] << "\tT:" \
+            //     << bnode.b[0] << "\t" << bnode.b[1] << "\t" <<  bnode.b[2] << "\t" << std::endl;
             Qs->arr.push_back(q);
             Ts->arr.push_back(b);
-            As->arr.push_back(A);
 
+            if(output_geos){
+                std::shared_ptr<zeno::PrimitiveObject> prim;
+                auto object = safe_at(ud.inputs, geo_name, "blender bone_geo input")();
+                auto mesh = safe_dynamic_cast<BlenderMesh>(object);
 
-        }
-
-        if(output_geos){
-            for(const auto& bone : bones){
-                for(const auto& geo_name : ud.bone2geos[bone]){
-                    if(ud.inputs.find(geo_name) == ud.inputs.end())
-                        throw std::runtime_error("NO SPECIFIED GEO DETECTED IN INPUTS");
-
-                    // std::cout << "OUTPUT GEO NAME : " << geo_name << std::endl;
-                    auto object = safe_at(ud.inputs, geo_name, "blender collection input")();
-                    auto mesh = safe_dynamic_cast<BlenderMesh>(object);
-                    // std::cout << geo_name << "'s matrix : " << std::endl;
-                    // for(size_t i = 0;i < 4;++i){
-                    //     for(size_t j = 0;j < 4;++j)
-                    //         std::cout << mesh->matrix[i][j] << "\t";
-                    //     std::cout << std::endl;
-                    // } 
-
-                    bool do_transform = get_param<bool>("do_transform");
-                    bool allow_quads = get_param<bool>("allow_quads");
-                    auto prim = BlenderMeshToPrimitiveObject(mesh.get(),
-                        allow_quads,
-                        do_transform,
-                        true,
-                        true,
-                        true);  
-
-                    // std::cout << "OUT_BONE_GEO : " << geo_name << std::endl;
-                    Geos->arr.push_back(std::move(prim));                  
-                }
+                bool do_transform = get_param<bool>("do_transform");
+                bool allow_quads = get_param<bool>("allow_quads");
+                prim = BlenderMeshToPrimitiveObject(mesh.get(),
+                    allow_quads,
+                    do_transform,
+                    true,
+                    true,
+                    true); 
+                Geos->arr.push_back(std::move(prim));  
             }
         }
 
-
-
-        // std::cout << "Finish BlenderInputArmature" << std::endl;
-
         auto end = clock();
-        fmt::print("{}-{}", 1, 1.0);
+        // fmt::print("{}-{}", 1, 1.0);
         std::cout << "TIME_ELAPSE : " << ((float)(end - start)) / CLOCKS_PER_SEC << std::endl;
 
         set_output("Ts",std::move(Ts));
         set_output("Qs",std::move(Qs));
-        set_output("As",std::move(As));
         set_output("geos",std::move(Geos));
     }
 };
 ZENDEFNODE(BlenderInputArmature, {
     {"armid"},
-    {"Ts","Qs","As","geos"},
+    {"Ts","Qs","geos"},
     {
         {"bool", "output_geos","1"},
         {"bool", "allow_quads", "1"}, // only work for the outputFeos tag is turned on 

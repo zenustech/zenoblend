@@ -266,34 +266,56 @@ def graph_deal_armature_input(graphPtr,_armature_name):
         raise RuntimeError('No Armature named {} in objects'.format(armature_name))
     cbs = []
 
+#   the dynamic data of bones 
+    poses = A.pose.bones
+#   the static data of bones
+    btree = A.data.bones
+
     # Make sure the binded bone geometries are loaded in
+    bone2geo = {}
+    for bone in btree.keys():
+        bone2geo[bone] = "None"
     for obj in A.children:
         if obj.type == 'MESH':
             cbs.append(graph_deal_input(graphPtr,obj.name))
-            # Update the bones relationship
-            # bone_name = obj.parent_bone
-            # bone = A.pose.bones[bone_name]
-            # bone_name_full = armature_name + '@' + bone_name
-            # bone_orig_rotation_mode = bone.rotation_mode
-            # bone.rotation_mode = 'QUATERNION'
-            # core.graphSetInputBone(graphPtr,bone_name_full,obj.matrix_world,bone.rotation_quaternion,bone.location)
-            # core.graphUpdateArmature2BonesDict(graphPtr,armature_name,bone_name_full)
-            # core.graphUpdateBone2GeosDict(graphPtr,bone_name_full,obj.name)
-            # bone.rotation_mode = bone_orig_rotation_mode
+            bone2geo[obj.parent_bone] = obj.name
+
+    print("bone2geo:\n{}".format(bone2geo))
 
     bone2idx = {}
-    for i in range(len(A.data.bones.keys())):
-        bone2idx[A.data.bones[i].name] = i
-    parent_pairs = []
-    for i in range(len(A.data.bones.keys())):
-        bone = A.data.bones[i]
+    for i in range(len(btree.keys())):
+        bone2idx[btree[i].name] = i
+    # (parent_idx,bone_idname,bone_custom_shape_idname,loc_quat,loc_b)
+    bone_tree = []
+    print("PYTYON_INPUT:")
+    for i in range(len(btree.keys())):
+        bone = btree[i]
         bone_name_full = armature_name + '@' + bone.name
-        if bone.parent is None:    
-                parent_pairs.append((bone_name_full,-1))
-        else:       
-            parent_pairs.append((bone_name_full,bone2idx[bone.parent.name]))
+        parent_idx = -1 if bone.parent is None else bone2idx[bone.parent.name]
+        bone_custom_shape_name = bone2geo[bone.name]
+        pose = poses[bone.name]
+        # safe the rotation mode
+        ori_mode = pose.rotation_mode
+        # Update the quaternion
+        pose.rotation_mode = 'QUATERNION'
+        # Store as tuple
 
+        bone_tree.append(
+            (   parent_idx
+            ,   bone_name_full
+            ,   bone_custom_shape_name
+            # ,   tuple(bone.head_local) # the head local lies in the matrix_local, it is a general case
+            ,   tuple(pose.rotation_quaternion)
+            ,   tuple(pose.location)
+            ,   tuple(map(tuple,bone.matrix_local))
+            )
+        )
 
+        # print("{}-{}-{}-{}-{}-{}".format(parent_idx,bone_name_full,bone_custom_shape_name,bone.head_local,pose.rotation_quaternion,pose.location))
+        pose.rotation_mode = ori_mode
+
+    # do forward kinematics and write the resulted pose into core
+    core.graphSetInputBoneStructure(graphPtr,armature_name,bone_tree)
 
     return cbs
 
@@ -312,11 +334,13 @@ def execute_scene(graph_name, is_framed):
 
     prepareCallbacks = []
     inputNames = core.graphGetInputNames(graphPtr) # might include collection names
-    # print('graph inputs:', inputNames)
+    print('graph inputs:', inputNames)
     for inputName in inputNames:
         if inputName.startswith('@BC_'): # collection name
+            print("BC!!!")
             prepareCallbacks.extend(graph_deal_collection_input(graphPtr, inputName))
         elif inputName.startswith('@BA_'): # armature name
+            print("BA!!!")
             prepareCallbacks.extend(graph_deal_armature_input(graphPtr,inputName))
         else: # input name indicating a mesh name
             prepareCallbacks.append(graph_deal_input(graphPtr, inputName))

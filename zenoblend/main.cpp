@@ -12,11 +12,14 @@ namespace py = pybind11;
 #include <zeno/zeno.h>
 #include "BlenderMesh.h"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <Eigen/StdVector>
+
 PYBIND11_MAKE_OPAQUE(std::vector<float>);
 PYBIND11_MAKE_OPAQUE(std::vector<std::vector<float>>);
 
 static std::map<int, std::unique_ptr<zeno::Scene>> scenes;
-
 void updateKey2SetMap(std::map<std::string, std::set<std::string>>& smap,
     const std::string& key,const std::string& elm) {
         if(smap.find(key) == smap.end())
@@ -101,7 +104,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
 
     m.def("graphApply", []
             ( uintptr_t graphPtr
-            ) -> void
+            ) -> void    
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
         graph->applyGraph();
@@ -122,36 +125,90 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             return axis;
         };
     });
-
+// It seems that, in blender3.1 the armature's bone's quaternion and location switch y-z axis
     m.def("graphSetInputBoneStructure",[] 
         (   uintptr_t graphPtr
-        ,   std::string ArmatureName
-        ,   std::vector<std::pair<std::string,int>> parent_pairs
-        )   -> void
-        {
-
-        }
-    
-    );
-
-    m.def("graphSetInputBone",[] 
-            (   uintptr_t graphPtr
-            ,   std::string boneName
-            ,   std::array<std::array<float, 4>, 4> matrix
-            ,   std::array<float,4> loc_quat
-            ,   std::array<float,3> loc_trans
-            ) -> void
+        ,   std::string armature_name
+        ,   std::vector<std::tuple<
+                            int,                                    // parent idx
+                            std::string,                            // bone_name_full
+                            std::string,                            // custom_shape_idname
+                            // std::array<float,3>,                 // the location of head lies in the local matrix
+                            std::array<float,4>,                    // loc_quat
+                            std::array<float,3>,                    // loc_trans
+                            std::array<std::array<float,4>,4>       // local_matrix
+                            >> loc_btree
+        )-> void
     {
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
         auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
 
-        ud.inputs[boneName] = [=] () -> std::shared_ptr<zeno::BlenderAxis> {
-            auto bone = std::make_shared<zeno::BlenderBone>();
-            bone->matrix = matrix;
-            bone->loc_quat = loc_quat;
-            bone->loc_b = loc_trans;
-            return bone;
-        };
+        if(ud.armature2btree.find(armature_name) == ud.armature2btree.end())
+            ud.armature2btree.insert(std::make_pair(armature_name,std::vector<zeno::BlenderBone>()));
+
+        auto& global_tree = ud.armature2btree[armature_name];
+        global_tree.resize(loc_btree.size());
+
+        // before applying the forward kinematric algorithm,
+        // we need to map the local quaterion and translation on local basis into the ones on the global basis.
+        // do forward kinematics
+        // reference code : https://github.com/libigl/libigl/blob/36e8435a2f724e83e14f79d128102d06b514a4f4/include/igl/forward_kinematics.cpp 
+        // the btree vector is ordered using DFS, we can do forward kinematic using dynamic programming directly in a propagating forward fasion
+
+        for(int i = 0;i < global_tree.size();++i){
+            const auto& loc_cnode = loc_btree[i];
+            auto& global_cnode = global_tree[i];
+
+            const auto& p = std::get<0>(loc_cnode);
+            const auto& b_idname = std::get<1>(loc_cnode);
+            const auto& geo_idname = std::get<2>(loc_cnode);
+            const auto& dQ_ = std::get<3>(loc_cnode);
+            const auto& dT_ = std::get<4>(loc_cnode);
+            const auto& dM_ = std::get<5>(loc_cnode);
+
+            global_cnode.parent_idx = p;
+            if(p >= i){
+                throw std::runtime_error("THE INPUT BTREE VECTOR IS NOT A DFS TRANSVERSE");
+            }
+            global_cnode.bone_idname = b_idname;
+            global_cnode.bone_custom_shape_idname = geo_idname;
+
+            // first we need to switch the dQ and dT into global basis
+            auto dQ = Eigen::Quaterniond();
+            dQ.w() = dQ_[0];
+            dQ.x() = dM_[0][0] * dQ_[1] + dM_[0][1] * dQ_[2] + dM_[0][2] * dQ_[3];
+            dQ.y() = dM_[1][0] * dQ_[1] + dM_[1][1] * dQ_[2] + dM_[1][2] * dQ_[3];
+            dQ.z() = dM_[2][0] * dQ_[1] + dM_[2][1] * dQ_[2] + dM_[2][2] * dQ_[3];
+            auto dT = Eigen::Vector3d();
+            dT <<   dM_[0][0] * dT_[0] + dM_[0][1] * dT_[1] + dM_[0][2] * dT_[2], \
+                    dM_[1][0] * dT_[0] + dM_[1][1] * dT_[1] + dM_[1][2] * dT_[2], \
+                    dM_[2][0] * dT_[0] + dM_[2][1] * dT_[1] + dM_[2][2] * dT_[2];
+
+            Eigen::Vector3d r;      // head location in the global basis
+            r << dM_[0][3],dM_[1][3],dM_[2][3];
+
+            auto vQ = Eigen::Quaterniond();
+            auto vT = Eigen::Vector3d();
+            if(global_cnode.parent_idx == -1){          // if the bone is a root bone
+                vQ = dQ;
+                vT = r - dQ * r + dT;
+            }else{
+                const auto& global_pnode = global_tree[global_cnode.parent_idx];
+                auto vQp = Eigen::Quaterniond();
+                vQp.w() = global_pnode.quat[0];
+                vQp.x() = global_pnode.quat[1];
+                vQp.y() = global_pnode.quat[2];
+                vQp.z() = global_pnode.quat[3]; 
+
+                Eigen::Vector3d vTp;
+                vTp << global_pnode.b[0],global_pnode.b[1],global_pnode.b[2];
+                vQ = vQp * dQ;
+                vT = vTp - vQ * r + vQp * (r + dT);
+            }
+
+            global_cnode.quat = {vQ.w(),vQ.x(),vQ.y(),vQ.z()};
+            global_cnode.b = {vT[0],vT[1],vT[2]};
+        }  
     });
 
     m.def("graphSetInputMesh", []

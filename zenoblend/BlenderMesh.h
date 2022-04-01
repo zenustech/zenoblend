@@ -56,8 +56,8 @@ struct BlenderBone : IObjectClone<BlenderBone,BlenderAxis> {
     int parent_idx;
     std::string bone_idname;
     std::string bone_custom_shape_idname;
-    std::array<float,4> loc_quat;              // local quaternion
-    std::array<float,3> loc_b;                 // local translation
+    std::array<float,4> quat;
+    std::array<float,3> b;
 };
 
 // struct BlenderBoneTreeNode {}

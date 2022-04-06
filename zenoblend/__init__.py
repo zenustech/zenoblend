@@ -24,6 +24,7 @@ from . import (
     node_system,
     execute_operator,
     gpu_drawer,
+    io_import_mesh,
 )
 
 modules = (
@@ -31,6 +32,7 @@ modules = (
     node_system,
     execute_operator,
     gpu_drawer,
+    io_import_mesh,
 )
 
 

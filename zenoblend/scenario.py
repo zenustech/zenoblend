@@ -28,7 +28,13 @@ def _prepare_mesh(obj, depsgraph, no_modifiers=False):
         mesh = object_eval.to_mesh()
 
         if mesh:
-            # TODO test if this makes sensegraphSetInputMesh2
+            # TODO test if this makes sense
+            # If negative scaling, we have to invert the normals
+            # if not mesh.has_custom_normals and object_eval.matrix_world.determinant() < 0.0:
+            #     # Does not handle custom normals
+            #     mesh.flip_normals()
+
+            mesh.calc_loop_triangles()
             if not mesh.loop_triangles:
                 object_eval.to_mesh_clear()
                 mesh = None
@@ -100,12 +106,12 @@ def meshToBlender(meshPtr, mesh):
     core.meshGetLoops(meshPtr, loopPtr, loopCount)
 
     # loop attributes are considered to be vertex color now...
-    for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
-        bl_attr_name = 'Zeno_'+attrName
-        if bl_attr_name not in mesh.vertex_colors:
-            mesh.vertex_colors.new(name=bl_attr_name)
-        loopColorPtr = mesh.vertex_colors[bl_attr_name].data[0].as_pointer() if loopCount else 0
-        core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
+    # for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
+    #     bl_attr_name = 'Zeno_'+attrName
+    #     if bl_attr_name not in mesh.vertex_colors:
+    #         mesh.vertex_colors.new(name=bl_attr_name)
+    #     loopColorPtr = mesh.vertex_colors[bl_attr_name].data[0].as_pointer() if loopCount else 0
+    #     core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
     mesh.polygons.add(polyCount)
@@ -113,18 +119,18 @@ def meshToBlender(meshPtr, mesh):
     polyPtr = mesh.polygons[0].as_pointer() if polyCount else 0
     core.meshGetPolygons(meshPtr, polyPtr, polyCount)
 
-    for attrName, attrType in core.meshGetPolyAttrNameType(meshPtr).items():
-        attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
-        if attrName not in mesh.attributes:
-            mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
-        elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'FACE':
-            mesh.attributes.remove(mesh.attributes[attrName])
-            mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
-        print('adding FACE attribute', attrName, 'with type', attrType)
+    # for attrName, attrType in core.meshGetPolyAttrNameType(meshPtr).items():
+    #     attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
+    #     if attrName not in mesh.attributes:
+    #         mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
+    #     elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'FACE':
+    #         mesh.attributes.remove(mesh.attributes[attrName])
+    #         mesh.attributes.new(name=attrName, type=attrType, domain='FACE')
+    #     print('adding FACE attribute', attrName, 'with type', attrType)
 
-        if polyCount:
-            polyAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
-            core.meshGetPolyAttr(meshPtr, attrName, polyAttrPtr, polyCount)
+    #     if polyCount:
+    #         polyAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
+    #         core.meshGetPolyAttr(meshPtr, attrName, polyAttrPtr, polyCount)
 
     edgeCount = core.meshGetEdgesCount(meshPtr)
     mesh.edges.add(edgeCount)
@@ -132,7 +138,7 @@ def meshToBlender(meshPtr, mesh):
     edgePtr = mesh.edges[0].as_pointer() if edgeCount else 0
     core.meshGetEdges(meshPtr, edgePtr, edgeCount)
 
-    mesh.use_auto_smooth = core.meshGetUseAutoSmooth(meshPtr)
+    # mesh.use_auto_smooth = core.meshGetUseAutoSmooth(meshPtr)
 
     mesh.update()
 
@@ -182,6 +188,10 @@ def delete_scene():
         nodetree.frameCache.clear()
     return hadScene
 
+
+
+
+
 # if the input name is not an object's name, it might be a collection name
 def graph_deal_input(graphPtr, inputName):
     if inputName not in bpy.data.objects:
@@ -208,14 +218,20 @@ def graph_deal_input(graphPtr, inputName):
 
 
 def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
+    is_edit_mode = bpy.context.mode == "EDIT_MESH"
+    if is_edit_mode:
+        bpy.ops.object.mode_set(mode = 'OBJECT')
+
     if outputName not in bpy.data.objects:
         print('WARNING: object `{}` not exist, creating now'.format(outputName))
         blenderMesh = bpy.data.meshes.new(outputName)
         blenderObj = bpy.data.objects.new(outputName, blenderMesh)
         bpy.context.collection.objects.link(blenderObj)
-
     else:
         blenderObj = bpy.data.objects[outputName]
+        oldmesh = blenderObj.data
+        oldmeshName = blenderObj.data.name
+
         if is_framed:
             # todo: only need to copy the material actually:
             blenderMesh = blenderObj.data.copy()
@@ -227,9 +243,8 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
     # print("outMeshAttrs:")
     # for attrName, attrType in core.meshGetVertAttrNameType(outMeshPtr).items():
     #     print("attrName : {}",format(attrName))
-
-
     matrix = core.meshGetMatrix(outMeshPtr)
+    # print("matrix : {}".format(matrix))
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
 
@@ -242,6 +257,9 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
         currFrameCache[blenderObj.name] = blenderMesh.name
 
     meshToBlender(outMeshPtr, blenderMesh)
+
+    if is_edit_mode:
+        bpy.ops.object.mode_set(mode = 'EDIT')
 
 
 def graph_deal_collection_input(graphPtr,_inputColName): # return a list a mesh callbacks
@@ -280,14 +298,14 @@ def graph_deal_armature_input(graphPtr,_armature_name):
             cbs.append(graph_deal_input(graphPtr,obj.name))
             bone2geo[obj.parent_bone] = obj.name
 
-    print("bone2geo:\n{}".format(bone2geo))
+    # print("bone2geo:\n{}".format(bone2geo))
 
     bone2idx = {}
     for i in range(len(btree.keys())):
         bone2idx[btree[i].name] = i
     # (parent_idx,bone_idname,bone_custom_shape_idname,loc_quat,loc_b)
     bone_tree = []
-    print("PYTYON_INPUT:")
+    # print("PYTYON_INPUT:")
     for i in range(len(btree.keys())):
         bone = btree[i]
         bone_name_full = armature_name + '@' + bone.name
@@ -322,8 +340,7 @@ def graph_deal_armature_input(graphPtr,_armature_name):
 
 def execute_scene(graph_name, is_framed):
     t0 = time.time()
-
-
+    
     core.sceneSwitchToGraph(sceneId, graph_name)
     graphPtr = core.sceneGetCurrentGraph(sceneId)
     core.graphClearDrawBuffer(graphPtr)
@@ -422,6 +439,7 @@ def get_enabled_trees():
 
 @bpy.app.handlers.persistent
 def frame_update_callback(*unused):
+    print("frame_update_get_called")
     if sceneId is None:
         return
 
@@ -430,10 +448,13 @@ def frame_update_callback(*unused):
         nowUpdating = True
 
         # static_tree, framed_tree = get_tree_names()
-        #if not static_tree and not framed_tree:
+        # if not static_tree and not framed_tree:
         #    return False
         reload_scene()
         for tree in get_enabled_trees():
+            print("tree.{}".format(tree.name))
+            # if tree.zeno_realtime_update:
+            #     continue
             if tree.zeno_cached:
                 update_frame(tree.name)
             else:
@@ -453,13 +474,14 @@ nowUpdating = False
 
 @bpy.app.handlers.persistent
 def scene_update_callback(scene, depsgraph):
-    print("get_called")
+    print("scene_update_callback get_called")
     if sceneId is None:
         return
 
     scene_reloaded = False
 
     for tree in get_enabled_trees():
+        print("enabled_tree.{}".format(tree.name))
         if tree.zeno_realtime_update:
             if tree.zeno_cached:
                 reload_scene()
@@ -476,12 +498,12 @@ def scene_update_callback(scene, depsgraph):
                         colname = dep[4:]
                         for obj in bpy.data.collections[colname].all_objects:
                             our_deps.add(obj.name)
-                print("deps:{}".format(our_deps))
+                # print("deps:{}".format(our_deps))
 
                 needs_update = False
                 for update in depsgraph.updates:
                     object = update.id
-                    print("update_id: {}".format(object))
+                    # print("update_id: {}".format(object))
                     if isinstance(object, bpy.types.Mesh):
                         object = object.id_data
                     if not isinstance(object, bpy.types.Object):
@@ -499,6 +521,8 @@ def scene_update_callback(scene, depsgraph):
                 if not needs_update:
                     print("STILL")
                     return
+                else:
+                    print("UPDATE")
 
                 global nowUpdating
                 if not nowUpdating:

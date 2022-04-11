@@ -265,7 +265,7 @@ def def_node_class(name, inputs, outputs, category):
 
         def update(self):  # rewrite update function
             if self.id_data.zeno_realtime_update:
-                print('updating by node edit')
+                print('updating by node edit')             
                 scenario.frame_update_callback()
 
     Def.__doc__ = 'Zeno node from ZDK: ' + name
@@ -324,6 +324,19 @@ class ZenoNode_BlenderInputAxes:
 
     def draw_buttons(self, context, layout):
         layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
+
+class ZenoNode_BlenderSelectedPrimtive:
+    '''Zeno specicalized mixin BlenderSelected Node'''
+    objid: bpy.props.StringProperty()
+
+    bpy_data_inputs = {'objid': 'objects'}
+
+    selectable_input_obj = True
+    selectable_input_collection = False
+
+    # def draw_buttons(self, context, layout):
+        # layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')
+        # objid = context.selected_objects[0].name
 
 class ZenoNode_BlenderInputPrimitive:
     '''Zeno specialized mixin BlenderInputPrimitive node'''

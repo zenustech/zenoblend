@@ -279,6 +279,51 @@ ZENDEFNODE(BlenderInputArmature, {
     {"blender"},
 });
 
+struct BlenderSelectedPrimtive : INode {
+    virtual void complete() override {
+        // Push the input name into the graph input list before the graph is activated
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
+        auto objid = get_input2<std::string>("objid");
+        ud.input_names.insert(objid);
+    }
+
+    virtual void apply() override {
+        // std::cout << "BlenderInputPrimitive Apply" << std::endl;
+        auto &ud = graph->getUserData().get<BlenderData>("blender_data");
+        auto objid = get_input2<std::string>("objid");
+
+        for(const auto& key : ud.input_names){
+            std::cout << "NAME : " << key << std::endl;
+        }
+        std::cout << "FINISH OUTPUT INPUTS" << std::endl;
+        auto object = safe_at(ud.inputs, objid, "blender input")();
+        // std::cout << "PASS HERE" << std::endl;
+
+        auto mesh = safe_dynamic_cast<BlenderMesh>(object);
+        auto prim = BlenderMeshToPrimitiveObject(mesh.get(),
+            get_param<bool>("allow_quads"),
+            get_param<bool>("do_transform"),
+            get_param<bool>("has_edges"),
+            get_param<bool>("has_faces"),
+            get_param<bool>("has_vert_attr"));
+
+        set_output("prim", std::move(prim));
+        set_output2("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BlenderSelectedPrimtive, {
+    {},
+    {"prim"},
+    {
+    {"bool", "allow_quads", "0"},
+    {"bool", "do_transform", "1"},
+    {"bool", "has_edges", "0"},
+    {"bool", "has_faces", "1"},
+    {"bool", "has_vert_attr","1"}
+    },
+    {"blender"},
+});
 
 struct BlenderInputPrimitive : INode {
     virtual void complete() override {
@@ -360,9 +405,16 @@ struct BlenderOutputPrimitive : INode {
         mesh->is_smooth = get_param<bool>("is_smooth");
         mesh->use_auto_smooth = get_param<bool>("use_auto_smooth");
 
+        size_t loop_offset = 0;
+
+        size_t nm_edges =  get_param<bool>("has_edges") ? prim->lines.size() : 0;
+        size_t nm_tris = get_param<bool>("has_faces") ? prim->tris.size() : 0;
+        size_t nm_quads = get_param<bool>("has_faces") ? prim->quads.size() : 0;
+
+        mesh->poly.resize(nm_tris + nm_quads);
+        mesh->loop.resize(2 * nm_edges + 3 * nm_tris + 4 * nm_quads);
+
         if (get_param<bool>("has_faces")) {
-            mesh->poly.resize(prim->tris.size() + prim->quads.size());
-            mesh->loop.resize(3 * prim->tris.size() + 4 * prim->quads.size());
             #pragma omp parallel for
             for (int i = 0; i < prim->tris.size(); i++) {
                 auto e = prim->tris[i];
@@ -401,6 +453,19 @@ struct BlenderOutputPrimitive : INode {
                     }
                 });
             }
+
+            loop_offset = prim->tris.size() * 3 + prim->quads.size() * 4;
+        }
+
+        if (get_param<bool>("has_edges")) {
+            mesh->edge.resize(prim->lines.size());
+            #pragma omp parallel for
+            for (int i = 0; i < prim->lines.size(); i++) {
+                auto e = prim->lines[i];
+                mesh->loop[loop_offset + i*2 + 0] = e[0];
+                mesh->loop[loop_offset + i*2 + 1] = e[1];
+                mesh->edge[i] = {e[0], e[1]};
+            }
         }
 
         if (get_param<bool>("has_vert_color")) {
@@ -414,14 +479,7 @@ struct BlenderOutputPrimitive : INode {
             });
         }
 
-        if (get_param<bool>("has_edges")) {
-            mesh->edge.resize(prim->lines.size());
-            #pragma omp parallel for
-            for (int i = 0; i < prim->lines.size(); i++) {
-                auto e = prim->lines[i];
-                mesh->edge[i] = {e[0], e[1]};
-            }
-        }
+
 
         ud.outputs[objid] = std::move(mesh);
     }

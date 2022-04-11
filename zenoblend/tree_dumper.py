@@ -9,10 +9,18 @@ def dump_tree(tree):
         yield ('addNode', node_type, node_name)
 
         # thank @hooyuser for contribute!
+        print('node_name = {}'.format(node_name))
         if hasattr(node, 'bpy_data_inputs'):
             for input_name, data_type in node.bpy_data_inputs.items():
+
                 data_blocks = getattr(bpy.data, data_type)
                 data_block_name = getattr(node, input_name)
+
+                if hasattr(node,'selected_input_obj'):
+                    print("selected_input_obj : {}".format(bpy.context.selected_objects[0].name))
+                    data_block_name = bpy.context.selected_objects[0].name
+
+                # print("{} -> {} -> {}".format(input_name,data_type,data_block_name))
                 if data_block_name not in data_blocks:
                     print('WARNING: object named `{}` not exist!')
                     continue

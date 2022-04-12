@@ -300,6 +300,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             ( uintptr_t graphPtr
             , std::string objName
             , std::array<std::array<float, 4>, 4> matrix
+            , std::array<std::array<float, 4>, 4> matrix_basis
             , uintptr_t meshPtr
             ) ->void
     {
@@ -312,6 +313,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             auto vdata = blender_mesh->vdata;
 
             zeno_mesh->matrix = matrix;
+            zeno_mesh->matrix_basis = matrix_basis;
             zeno_mesh->vert.resize(blender_mesh->totvert);
 
             for(size_t idx = 0;idx < vdata.totlayer;++idx){
@@ -370,6 +372,7 @@ PYBIND11_MODULE(pylib_zenoblend, m) {
             , std::string const &objName
             ) -> uintptr_t
     {
+        // std::cout << "graphGetOutMesh" << std::endl;
         auto graph = reinterpret_cast<zeno::Graph *>(graphPtr);
         auto &ud = graph->getUserData().get<zeno::BlenderData>("blender_data");
 

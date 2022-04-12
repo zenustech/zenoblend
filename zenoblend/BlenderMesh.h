@@ -7,7 +7,6 @@
 #include <vector>
 
 namespace zeno {
-
 // PolyMesh structure can also serve as Armature
 struct PolyMesh {
     struct Polygon {
@@ -25,6 +24,8 @@ struct PolyMesh {
         inline Edge(int src, int dst)
             : src(src), dst(dst) {}
     };
+
+    std::array<std::array<float,4>,4> matrix_basis;
 
     AttrVector<vec3f> vert;
     AttrVector<Edge> edge;

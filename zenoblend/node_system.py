@@ -331,8 +331,8 @@ class ZenoNode_BlenderSelectedPrimtive:
 
     bpy_data_inputs = {'objid': 'objects'}
 
-    selectable_input_obj = True
-    selectable_input_collection = False
+    selected_input_obj = True
+    selected_input_collection = False
 
     # def draw_buttons(self, context, layout):
         # layout.prop_search(self, 'objid', bpy.data, 'objects', text='', icon='OBJECT_DATA')

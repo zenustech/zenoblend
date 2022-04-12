@@ -307,14 +307,30 @@ struct BlenderSelectedPrimtive : INode {
             get_param<bool>("has_faces"),
             get_param<bool>("has_vert_attr"));
 
+        const auto& bmatrix = mesh->matrix_basis;
+        // std::cout << "out_bmatrix:" << std::endl \
+        //     << bmatrix[0][0] << "\t" << bmatrix[0][1] << "\t" << bmatrix[0][2] << "\t" <<  bmatrix[0][3] << std::endl \
+        //     << bmatrix[1][0] << "\t" << bmatrix[1][1] << "\t" << bmatrix[1][2] << "\t" <<  bmatrix[0][3] << std::endl \
+        //     << bmatrix[2][0] << "\t" << bmatrix[2][1] << "\t" << bmatrix[2][2] << "\t" <<  bmatrix[0][3] << std::endl \
+        //     << bmatrix[3][0] << "\t" << bmatrix[3][1] << "\t" << bmatrix[3][2] << "\t" <<  bmatrix[0][3] << std::endl;
+
+        auto local_x = std::make_shared<zeno::NumericObject>();
+        auto local_y = std::make_shared<zeno::NumericObject>();
+        auto local_z = std::make_shared<zeno::NumericObject>();
+
+        local_x->set(zeno::vec3f(bmatrix[0][0],bmatrix[1][0],bmatrix[2][0]));
+        local_y->set(zeno::vec3f(bmatrix[0][1],bmatrix[1][1],bmatrix[2][1]));
+        local_z->set(zeno::vec3f(bmatrix[0][2],bmatrix[1][2],bmatrix[2][2]));
         set_output("prim", std::move(prim));
-        set_output2("object", std::move(object));
+        set_output("local_x",std::move(local_x));
+        set_output("local_y",std::move(local_y));
+        set_output("local_z",std::move(local_z));
     }
 };
 
 ZENDEFNODE(BlenderSelectedPrimtive, {
     {},
-    {"prim"},
+    {"prim","local_x","local_y","local_z"},
     {
     {"bool", "allow_quads", "0"},
     {"bool", "do_transform", "1"},
@@ -479,7 +495,14 @@ struct BlenderOutputPrimitive : INode {
             });
         }
 
-
+        if (!get_param<std::string>("vert_normal_channel").empty()) {
+            auto &nrms = mesh->vert.add_attr<zeno::vec3f>("nrm");
+            auto chn_name = get_param<std::string>("vert_normal_channel");
+            for (int i = 0; i < prim->size(); i++) {
+                nrms[i] = prim->attr<zeno::vec3f>(chn_name)[i];
+                std::cout << "AssignNorm<" << i << "> : \t" << nrms[i][0] << "\t" << nrms[i][1] << "\t" << nrms[i][2] << std::endl;
+            }
+        }
 
         ud.outputs[objid] = std::move(mesh);
     }
@@ -497,6 +520,7 @@ ZENDEFNODE(BlenderOutputPrimitive, {
     {"bool", "has_edges", "0"},
     {"bool", "has_faces", "1"},
     {"bool", "active", "1"},
+    {"string", "vert_normal_channel",""}
     },
     {"blender"},
 });

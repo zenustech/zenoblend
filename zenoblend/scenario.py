@@ -1,5 +1,7 @@
 import bpy
 import time
+import bmesh
+from mathutils import Vector
 
 from .dll import core
 
@@ -86,8 +88,11 @@ def meshToBlender(meshPtr, mesh):
     vertPtr = mesh.vertices[0].as_pointer() if vertCount else 0
     core.meshGetVertices(meshPtr, vertPtr, vertCount)
 
+
+    has_nrm_channel = False
     for attrName, attrType in core.meshGetVertAttrNameType(meshPtr).items():
         attrType = ['FLOAT_VECTOR', 'FLOAT'][attrType]
+
         if attrName not in mesh.attributes:
             mesh.attributes.new(name=attrName, type=attrType, domain='POINT')
         elif mesh.attributes[attrName].data_type != attrType or mesh.attributes[attrName].domain != 'POINT':
@@ -98,6 +103,13 @@ def meshToBlender(meshPtr, mesh):
         if vertCount:
             vertAttrPtr = mesh.attributes[attrName].data[0].as_pointer()
             core.meshGetVertAttr(meshPtr, attrName, vertAttrPtr, vertCount)
+            # We can not edit normal in this way, using split-normal
+            if attrName == "nrm":
+                has_nrm_channel = True
+            #     for i in range(len(mesh.vertices)):
+            #         nrm = mesh.attributes[attrName].data[i]
+            #         mesh.vertex_normals[i].vector = Vector([nrm[0],nrm[1],nrm[2]])
+
 
     loopCount = core.meshGetLoopsCount(meshPtr)
     mesh.loops.add(loopCount)
@@ -106,12 +118,15 @@ def meshToBlender(meshPtr, mesh):
     core.meshGetLoops(meshPtr, loopPtr, loopCount)
 
     # loop attributes are considered to be vertex color now...
-    # for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
-    #     bl_attr_name = 'Zeno_'+attrName
-    #     if bl_attr_name not in mesh.vertex_colors:
-    #         mesh.vertex_colors.new(name=bl_attr_name)
-    #     loopColorPtr = mesh.vertex_colors[bl_attr_name].data[0].as_pointer() if loopCount else 0
-    #     core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
+    for attrName, attrType in core.meshGetLoopAttrNameType(meshPtr).items():
+        bl_attr_name = 'Zeno_'+attrName
+        if bl_attr_name not in mesh.vertex_colors:
+            mesh.vertex_colors.new(name=bl_attr_name)
+        loopColorPtr = mesh.vertex_colors[bl_attr_name].data[0].as_pointer() if loopCount else 0
+        core.meshGetLoopColor(meshPtr, attrName, loopColorPtr, loopCount)
+    # # Add customed normals in split normals
+    #     pass
+
 
     polyCount = core.meshGetPolygonsCount(meshPtr)
     mesh.polygons.add(polyCount)
@@ -139,6 +154,22 @@ def meshToBlender(meshPtr, mesh):
     core.meshGetEdges(meshPtr, edgePtr, edgeCount)
 
     # mesh.use_auto_smooth = core.meshGetUseAutoSmooth(meshPtr)
+
+
+    if has_nrm_channel:
+        print("set split normals")
+        mesh.cal
+        mesh.use_auto_smooth = True
+        print("HRERE")
+        # mesh.normals_split_custom_set([(0,0,0) for l in mesh.loops])
+        print("here")
+        normals = []
+
+        for v in mesh.vertices:
+            normals.append(v.normal)
+        print("here {}".format(len(normals)))
+        # mesh.normals_split_custom_set_from_vertices(normals)
+
 
     mesh.update()
 
@@ -198,7 +229,7 @@ def graph_deal_input(graphPtr, inputName):
         raise RuntimeError('No object named `{}` in scene'.format(inputName))
         # return lambda: None
     blenderObj = bpy.data.objects[inputName]
-    matrix = tuple(map(tuple, blenderObj.matrix_world))
+    matrix_world = tuple(map(tuple, blenderObj.matrix_world))
 
     # print("matrix_world:\n{}".format(matrix))
     depsgraph = bpy.context.evaluated_depsgraph_get()
@@ -206,11 +237,12 @@ def graph_deal_input(graphPtr, inputName):
 
     # An Axis
     if blenderObj.type == 'EMPTY':
-        core.graphSetInputAxis(graphPtr, inputName, matrix)
+        core.graphSetInputAxis(graphPtr, inputName, matrix_world)
     # A Mesh
     elif blenderObj.type == 'MESH':
+        matrix_basis = bpy.data.objects[inputName].matrix_basis
         preparedMesh, prepareCallback = _prepare_mesh(blenderObj, depsgraph)
-        core.graphSetInputMesh2(graphPtr,inputName,matrix,blenderObj.data.as_pointer())
+        core.graphSetInputMesh2(graphPtr,inputName,matrix_world,matrix_basis,blenderObj.data.as_pointer())
     else:
         raise RuntimeError('Unexpected input object type: {}'.format(blenderObj.type))
 
@@ -219,8 +251,10 @@ def graph_deal_input(graphPtr, inputName):
 
 def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
     is_edit_mode = bpy.context.mode == "EDIT_MESH"
-    if is_edit_mode:
-        bpy.ops.object.mode_set(mode = 'OBJECT')
+    # if is_obj_mode:
+    # print("HERE_OK")
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+    # bpy.ops.mesh.remove_doubles(threshold=0.0001)
 
     if outputName not in bpy.data.objects:
         print('WARNING: object `{}` not exist, creating now'.format(outputName))
@@ -238,6 +272,7 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
             blenderObj.data = blenderMesh
         else:
             blenderMesh = blenderObj.data
+        # bpy.context.collection.objects.link(blenderObj)
 
     outMeshPtr = core.graphGetOutputMesh(graphPtr, outputName)
     # print("outMeshAttrs:")
@@ -248,7 +283,8 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
     if any(map(any, matrix)):
         blenderObj.matrix_world = matrix
 
-    if is_framed:
+    if is_framed:    # if blenderMesh.is_editmode:
+    #     print("IN EDIT MODE")
         currFrameId = bpy.context.scene.frame_current
         tree = bpy.data.node_groups[graph_name]
         if not hasattr(tree, "frameCache"):
@@ -256,7 +292,20 @@ def graph_deal_output(graph_name, graphPtr, outputName, is_framed):
         currFrameCache = tree.frameCache.setdefault(currFrameId, {})
         currFrameCache[blenderObj.name] = blenderMesh.name
 
+    # print("MeshToBlender")
     meshToBlender(outMeshPtr, blenderMesh)
+
+
+    original_active_object = bpy.context.view_layer.objects.active
+    bpy.context.view_layer.objects.active = blenderObj
+    bpy.ops.object.mode_set(mode = 'EDIT')
+    bpy.ops.object.mode_set(mode = 'OBJECT')
+    # print('BlenderObj Update {}'.format(blenderObj.name))
+    # if blenderMesh.is_editmode:
+    #     print("IN EDIT MODE")
+    # bmesh.update_edit_mesh(blenderMesh)
+
+
 
     if is_edit_mode:
         bpy.ops.object.mode_set(mode = 'EDIT')
@@ -480,43 +529,55 @@ def scene_update_callback(scene, depsgraph):
 
     scene_reloaded = False
 
+    # reload_scene()
+
     for tree in get_enabled_trees():
-        print("enabled_tree.{}".format(tree.name))
+        # print("enabled_tree.{}".format(tree.name))
         if tree.zeno_realtime_update:
             if tree.zeno_cached:
+            # if True:
+                print("tree.zeno_cached reload")
                 reload_scene()
-                update_frame(tree.name)
-               
+                # update_frame(tree.name)
+                update_scene(tree.name)
             else:
                 static_tree = tree.name
                 _our_deps = get_dependencies(static_tree)
                 our_deps = set()
                 for dep in _our_deps:
+                    # print("dep:{}".format(dep))
                     if dep.startswith('@BA_'):
                         our_deps.add(dep[4:])
-                    if dep.startswith('@BC_'):
+                    elif dep.startswith('@BC_'):
                         colname = dep[4:]
                         for obj in bpy.data.collections[colname].all_objects:
                             our_deps.add(obj.name)
-                # print("deps:{}".format(our_deps))
+                    else:
+                        our_deps.add(dep)
+                
+                print("deps:{}".format(_our_deps))
 
                 needs_update = False
                 for update in depsgraph.updates:
                     object = update.id
-                    # print("update_id: {}".format(object))
+                    print("update_id: {}".format(object))
                     if isinstance(object, bpy.types.Mesh):
                         object = object.id_data
                     if not isinstance(object, bpy.types.Object):
+                        print("NO OBJ")
                         continue
                     if object.name in our_deps:
                         print(time.strftime('[%H:%M:%S]'), 'update cause:', object.name)
                         needs_update = True
                         break
                 else:
+                    # if scene_reloaded:
+                    #     print("tree.scene_reloaded reload")
                     if scene_reloaded or reload_scene():
                         print(time.strftime('[%H:%M:%S]'), 'update cause node graph')
                         needs_update = True
                         scene_reloaded = True  # avoid reloading scene more than one time
+
 
                 if not needs_update:
                     print("STILL")
@@ -529,12 +590,12 @@ def scene_update_callback(scene, depsgraph):
                     try:
                         nowUpdating = True
                         #static_tree, framed_tree = get_tree_names()
+                        
                         if static_tree:
-                            print("update_scene")
+                            print("static_update_scene")
                             update_scene(static_tree)
                     finally:
                         nowUpdating = False
-
 #@bpy.app.handlers.persistent
 #def load_post_callback(dummy):
     #bpy.ops.node.zeno_apply()
